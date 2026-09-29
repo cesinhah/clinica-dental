@@ -435,6 +435,14 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+  /* AVISO DISCRETO DE REDE / LICENÇA (fica no topo, não cobre a tela) */
+  .aviso-rede{
+    position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:310;
+    background:var(--card);border:1px solid var(--border-strong);border-radius:8px;
+    color:var(--muted);font-size:12px;line-height:1.4;padding:6px 12px;max-width:92vw;
+    box-shadow:var(--shadow-modal);
+  }
+
   .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
   .hint.sem-margem{margin-top:0}
 
@@ -848,6 +856,8 @@
   <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.1c0 4-3.8 7.1-8.5 7.1-1 0-1.9-.14-2.8-.4L5 20.6l1.2-3.4a6.8 6.8 0 0 1-2.7-5.1C3.5 8.1 7.3 5 12 5s8.5 3.1 8.5 7.1z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></symbol>
 </svg>
 
+<div class="aviso-rede" id="avisoRede" role="status" aria-live="polite" hidden></div>
+
 <div class="login-overlay open" id="loginOverlay">
   <div class="login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitulo">
     <div class="login-cab">
@@ -859,14 +869,15 @@
     </div>
     <div class="field">
       <label for="loginUser">Usuário</label>
-      <select id="loginUser"></select>
+      <input type="text" id="loginUser" placeholder="usuário" autocomplete="username" spellcheck="false">
     </div>
     <div class="field">
       <label for="loginSenha">Senha</label>
       <input type="password" id="loginSenha" placeholder="••••••" autocomplete="current-password">
     </div>
+    <div class="hint" id="loginAviso" hidden></div>
     <button class="btn" id="btnLogin">Entrar</button>
-    <div class="demo">Demo: a senha de todos é <b>1234</b><br>Sistema local da recepção · v3.6</div>
+    <div class="demo">Demo: usuário <b>cesar</b> · senha <b>demo-Dental-2026</b><br>Sistema local da recepção · v3.6</div>
   </div>
 </div>
 
@@ -1116,19 +1127,8 @@
           <div class="tw">
           <table>
             <thead><tr><th>Nome</th><th>Telefone</th><th>Idioma</th><th>Próxima</th><th>Saldo</th></tr></thead>
-            <tbody>
-              <tr class="row" data-patient="Ana Souza" data-busca="ana souza 5545999112233 123.456.789-00 12345678900" title="Abrir a ficha de Ana Souza">
-                <td><b>Ana Souza</b></td><td class="muted">+55 45 99911-2233</td><td>PT</td><td data-prox="Ana Souza">—</td><td class="saldo-cell" data-saldo="Ana Souza">—</td></tr>
-              <tr class="row" data-patient="João Pereira" data-busca="joao pereira joão 5545988223344 987.654.321-00 98765432100" title="Abrir a ficha de João Pereira">
-                <td><b>João Pereira</b></td><td class="muted">+55 45 98822-3344</td><td>PT</td><td data-prox="João Pereira">—</td><td class="saldo-cell" data-saldo="João Pereira">—</td></tr>
-              <tr class="row" data-patient="Maria Lima" data-busca="maria lima 5545977334455 456.789.123-00 45678912300" title="Abrir a ficha de Maria Lima">
-                <td><b>Maria Lima</b></td><td class="muted">+55 45 97733-4455</td><td>PT</td><td data-prox="Maria Lima">—</td><td class="saldo-cell" data-saldo="Maria Lima">—</td></tr>
-              <tr class="row" data-patient="Carlos Oliveira" data-busca="carlos oliveira 595981555123 1234567-8 12345678" title="Abrir a ficha de Carlos Oliveira">
-                <td><b>Carlos Oliveira</b></td><td class="muted">+595 981 555 123</td><td>ES</td><td data-prox="Carlos Oliveira">—</td><td class="saldo-cell" data-saldo="Carlos Oliveira">—</td></tr>
-              <tr class="row" data-patient="Fernanda Costa" data-busca="fernanda costa 5545966445566 321.654.987-00 32165498700" title="Abrir a ficha de Fernanda Costa">
-                <td><b>Fernanda Costa</b></td><td class="muted">+55 45 96644-5566</td><td>PT</td><td data-prox="Fernanda Costa">—</td><td class="saldo-cell" data-saldo="Fernanda Costa">—</td></tr>
-              <tr class="row" data-patient="Roberto Almeida" data-busca="roberto almeida 595981444789 7654321-0 76543210" title="Abrir a ficha de Roberto Almeida">
-                <td><b>Roberto Almeida</b></td><td class="muted">+595 981 444 789</td><td>ES</td><td data-prox="Roberto Almeida">—</td><td class="saldo-cell" data-saldo="Roberto Almeida">—</td></tr>
+            <tbody id="pacTbody">
+              <!-- as linhas vêm de GET /api/pacientes (renderListaPacientes) -->
             </tbody>
           </table>
           </div>
@@ -1138,12 +1138,12 @@
         <div class="pac-ficha" id="fichaPaciente" aria-live="polite">
           <div class="ficha-head">
             <div>
-              <h2 class="day" id="prontNome">Ana Souza</h2>
-              <div class="date" id="prontInfo">Feminino · 34 anos · +55 45 99911-2233</div>
+              <h2 class="day" id="prontNome">—</h2>
+              <div class="date" id="prontInfo">Abra uma ficha para ver os dados do paciente.</div>
               <div class="ficha-chips">
                 <span class="chip" id="prontIdioma"><svg class="ic" aria-hidden="true"><use href="#i-globo"/></svg> Fala português</span>
                 <span class="chip neutro" id="prontSaldo">Quitado</span>
-                <a class="chip neutro" id="prontTel" href="tel:+5545999112233"><svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> +55 45 99911-2233</a>
+                <a class="chip neutro" id="prontTel" href="#"><svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> —</a>
               </div>
             </div>
             <div class="spacer" style="flex:1"></div>
@@ -1244,6 +1244,7 @@
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
               <div class="section-title" id="orcTitulo" style="margin-bottom:0">Orçamento</div>
               <div class="spacer" style="flex:1"></div>
+              <button class="btn small" id="btnNovoOrcamento"><svg class="ic" aria-hidden="true"><use href="#i-mais"/></svg> Novo orçamento</button>
               <button class="btn ghost small" id="btnImprimirOrc"><svg class="ic" aria-hidden="true"><use href="#i-print"/></svg> Imprimir</button>
               <button class="btn ghost small" id="btnEnviarOrc"><svg class="ic" aria-hidden="true"><use href="#i-enviar"/></svg> Enviar por WhatsApp</button>
               <button class="btn small" id="btnReceberOrc"><svg class="ic" aria-hidden="true"><use href="#i-receber"/></svg> Receber</button>
@@ -1837,6 +1838,31 @@
   </div>
 </div>
 
+<!-- ============ NOVO ORÇAMENTO ============ -->
+<div class="modal-overlay" id="modalOrcamento">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="orcModalTitulo" style="width:520px">
+    <h3 id="orcModalTitulo">Novo orçamento — <span id="orcModalPaciente"></span></h3>
+    <div class="grid g3">
+      <div class="field" style="grid-column:span 2">
+        <label for="orcDescricao">Procedimento</label>
+        <input type="text" id="orcDescricao" placeholder="Ex.: Restauração dente 26" data-autofocus>
+      </div>
+      <div class="field">
+        <label for="orcValor">Valor</label>
+        <input type="text" id="orcValor" placeholder="400,00">
+      </div>
+      <div class="field">
+        <label for="orcMoeda">Moeda</label>
+        <select id="orcMoeda"><option>BRL</option><option>USD</option><option>GS</option></select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="orcCancel">Cancelar</button>
+      <button class="btn" id="orcOk"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Adicionar ao orçamento</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1864,14 +1890,200 @@
     robo:'Consultas do robô', agenda:'Hoje', pacientes:'Pacientes', dinheiro:'Dinheiro',
     equipe:'Time', funcionario:'Ficha do funcionário', whatsapp:'Robô & Conversas'
   };
-  const patients = {
-    'Ana Souza':      {info:'Feminino · 34 anos · +55 45 99911-2233', tel:'+55 45 99911-2233', idioma:'PT', moeda:'BRL', orcamento:1200, pago:1200, dentes:{18:'done',26:'done',15:'todo',25:'todo'}, cpf:'123.456.789-00', rg:'12.345.678-9', comoConheceu:'indicacao', indicadoPor:'Fernanda Costa', indicacoes:2},
-    'João Pereira':   {info:'Masculino · 41 anos · +55 45 98822-3344', tel:'+55 45 98822-3344', idioma:'PT', moeda:'BRL', orcamento:400, pago:250, dentes:{26:'todo',36:'done'}, cpf:'987.654.321-00', rg:'98.765.432-1', comoConheceu:'google', indicacoes:0},
-    'Maria Lima':     {info:'Feminino · 28 anos · +55 45 97733-4455', tel:'+55 45 97733-4455', idioma:'PT', moeda:'USD', orcamento:150, pago:150, dentes:{46:'done'}, cpf:'456.789.123-00', rg:'45.678.912-3', comoConheceu:'instagram', indicacoes:1},
-    'Carlos Oliveira':{info:'Masculino · 52 anos · +595 981 555 123', tel:'+595 981 555 123', idioma:'ES', moeda:'GS', orcamento:3200000, pago:3000000, dentes:{36:'todo',37:'todo'}, ruc:'1234567-8', comoConheceu:'indicacao', indicadoPor:'Ana Souza', indicacoes:0},
-    'Fernanda Costa': {info:'Feminino · 37 anos · +55 45 96644-5566', tel:'+55 45 96644-5566', idioma:'PT', moeda:'BRL', orcamento:800, pago:800, dentes:{11:'done',21:'done'}, cpf:'321.654.987-00', rg:'32.165.498-7', comoConheceu:'whatsapp', indicacoes:0},
-    'Roberto Almeida':{info:'Masculino · 45 anos · +595 981 444 789', tel:'+595 981 444 789', idioma:'ES', moeda:'BRL', orcamento:0, pago:0, dentes:{}, ruc:'7654321-0', comoConheceu:'indicacao', indicadoPor:'Ana Souza', indicacoes:0}
-  };
+  /* ============================================================
+     CAMADA DE DADOS — a UI fala com o backend real (servidor.py).
+     api() é o único lugar que toca a rede: põe o token da sessão
+     (sessionStorage) no header Authorization e trata 401/429/503.
+     `patients` sai de GET /api/pacientes[/<id>] — não existe ficha
+     hardcoded aqui dentro.
+     ============================================================ */
+  const TOKEN_KEY = 'cd-token';
+  const USUARIO_KEY = 'cd-usuario';
+  const MENSAGEM_LICENCA = 'licença expirada, conecte à internet';
+  const patients = {};
+  let pacientesLista = [];          // GET /api/pacientes: [{id, nome, tel, cpf, ruc, rg}]
+  const finPorPaciente = {};        // GET /api/pacientes/<id>/financeiro
+  const evolucoesPorPaciente = {};  // GET /api/pacientes/<id>/evolucoes
+  let licencaAtiva = true;
+  let licencaConferida = false;
+  let usuarioLogado = null;
+
+  function token(){ try{ return sessionStorage.getItem(TOKEN_KEY) || ''; }catch(_){ return ''; } }
+  function guardarToken(t){
+    try{ t ? sessionStorage.setItem(TOKEN_KEY, t) : sessionStorage.removeItem(TOKEN_KEY); }catch(_){ }
+  }
+  function guardarUsuario(u){
+    try{ u ? sessionStorage.setItem(USUARIO_KEY, u) : sessionStorage.removeItem(USUARIO_KEY); }catch(_){ }
+  }
+  function usuarioDaSessao(){ try{ return sessionStorage.getItem(USUARIO_KEY) || ''; }catch(_){ return ''; } }
+  function esc(txt){
+    return String(txt == null ? '' : txt).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* aviso discreto no topo: rede caiu ou licença venceu — a tela não quebra */
+  function avisoRede(texto){
+    const el = document.getElementById('avisoRede');
+    if(!el) return;
+    if(!texto){ el.hidden = true; el.textContent = ''; return; }
+    el.textContent = texto;
+    el.hidden = false;
+  }
+  function mostrarAvisoLicenca(){
+    licencaAtiva = false;
+    const aviso = document.getElementById('loginAviso');
+    if(aviso){ aviso.hidden = false; aviso.textContent = 'Licença expirada, conecte à internet para voltar a usar o sistema.'; }
+    ['loginUser','loginSenha'].forEach(id=>{ const el = document.getElementById(id); if(el) el.disabled = true; });
+    const botao = document.getElementById('btnLogin');
+    if(botao) botao.disabled = true;
+    avisoRede('Licença expirada — conecte à internet para voltar a usar o sistema.');
+    const overlay = document.getElementById('loginOverlay');
+    if(overlay) overlay.classList.add('open');
+  }
+  function voltarParaLogin(){
+    guardarToken(''); guardarUsuario('');
+    usuarioLogado = null;
+    const botao = document.getElementById('btnLogin');
+    if(botao) botao.disabled = !licencaAtiva;
+    fecharTodosModais();
+    const overlay = document.getElementById('loginOverlay');
+    if(overlay) overlay.classList.add('open');
+  }
+
+  async function api(caminho, opcoes){
+    opcoes = opcoes || {};
+    const cabecalhos = Object.assign({}, opcoes.cabecalhos || {});
+    if(!opcoes.semToken && token()) cabecalhos['Authorization'] = 'Bearer ' + token();
+    const config = { method: opcoes.metodo || 'GET', headers: cabecalhos };
+    if(opcoes.corpo !== undefined){
+      cabecalhos['Content-Type'] = 'application/json';
+      config.body = JSON.stringify(opcoes.corpo);
+    }
+    let resposta;
+    try{
+      resposta = await fetch(caminho, config);
+    }catch(falha){
+      avisoRede('Sem conexão com o servidor local — os dados na tela podem estar desatualizados.');
+      const erro = new Error('sem conexão com o servidor local');
+      erro.rede = true;
+      throw erro;
+    }
+    let dados = null;
+    try{ dados = await resposta.json(); }catch(_){ dados = null; }
+    if(resposta.ok){
+      avisoRede('');
+      return dados;
+    }
+    if(resposta.status === 401){
+      const erro = new Error((dados && dados.erro) || 'sessão expirada');
+      erro.status = 401;
+      if(opcoes.semToken) throw erro;            // erro do próprio login: só mostra a mensagem
+      voltarParaLogin();
+      erro.sessao = true;
+      avisar(erro);
+      throw erro;
+    }
+    if(resposta.status === 503){
+      mostrarAvisoLicenca();
+      const erro = new Error((dados && dados.erro) || MENSAGEM_LICENCA);
+      erro.status = 503;
+      throw erro;
+    }
+    const erro = new Error((dados && dados.erro) || ('o servidor respondeu ' + resposta.status));
+    erro.status = resposta.status;
+    throw erro;
+  }
+  function avisar(erro){
+    if(erro && erro.sessao) return;              // o 401 já avisou e reabriu o login
+    if(erro && erro.rede){ toast('Sem conexão com o servidor — a ação não foi salva'); return; }
+    toast((erro && erro.message) || 'Não deu para salvar agora');
+  }
+
+  /* ---- leitura: quem manda no conteúdo é o banco ---- */
+  function idDoPaciente(nome){
+    const local = patients[nome];
+    if(local && local.id) return local.id;
+    const achado = pacientesLista.find(r => r.nome === nome);
+    return achado ? achado.id : null;
+  }
+  function infoDaFicha(d){
+    const partes = [];
+    if(d.sexo === 'F') partes.push('Feminino');
+    else if(d.sexo === 'M') partes.push('Masculino');
+    if(d.idade) partes.push(d.idade + ' anos');
+    if(d.tel) partes.push(d.tel);
+    return partes.length ? partes.join(' · ') : 'Ficha nova — completar cadastro';
+  }
+  function aplicarFicha(d){
+    const p = patients[d.nome] || (patients[d.nome] = {});
+    Object.assign(p, {
+      id:d.id, nome:d.nome, tel:d.tel || '', sexo:d.sexo || '', idade:d.idade || null,
+      idioma:d.idioma || 'PT', moeda:d.moeda || 'BRL',
+      cpf:d.cpf || '', rg:d.rg || '', ruc:d.ruc || '',
+      comoConheceu:d.comoConheceu || '', indicadoPor:d.indicadoPor || '',
+      orcamento:Number(d.orcamento) || 0, pago:Number(d.pago) || 0,
+      pendente:Number(d.pendente) || 0, dentes:d.dentes || {},
+      info:infoDaFicha(d)
+    });
+    return p;
+  }
+  async function carregarPacientes(){
+    pacientesLista = (await api('/api/pacientes')) || [];
+    const detalhes = await Promise.all(pacientesLista.map(r => api('/api/pacientes/' + r.id).catch(()=>null)));
+    detalhes.forEach(d => { if(d) aplicarFicha(d); });
+    renderListaPacientes();
+  }
+  async function carregarFicha(id){
+    const p = aplicarFicha(await api('/api/pacientes/' + id));
+    await carregarFinanceiro(id, p.nome);
+    await carregarEvolucoes(id, p.nome);
+    return p;
+  }
+  async function carregarFinanceiro(id, nome){
+    const dados = await api('/api/pacientes/' + id + '/financeiro').catch(()=>null);
+    if(!dados) return null;
+    finPorPaciente[nome] = dados;
+    const itens = dados.orcamentos || [];
+    if(itens.length){
+      const p = patients[nome] || {};
+      const moeda = p.moeda || 'BRL';
+      const total = itens.reduce((s,i)=> s + (Number(i.valor) || 0), 0);
+      orcamentos[nome] = {
+        status: (Number(p.pago) || 0) >= total ? 'Aprovado' : 'Aguardando',
+        itens: itens.map(i => ({proc:i.descricao, dente:i.dente || '—', valor:fmtMoeda(i.valor, i.moeda || moeda)})),
+        subtotal: fmtMoeda(total, moeda), desconto: fmtMoeda(0, moeda), total: fmtMoeda(total, moeda)
+      };
+    }
+    return dados;
+  }
+  async function carregarEvolucoes(id, nome, redesenhar){
+    const lista = await api('/api/pacientes/' + id + '/evolucoes').catch(()=>null);
+    if(!lista) return null;
+    evolucoesPorPaciente[nome] = lista;
+    if(redesenhar !== false && pacienteAtual === nome) renderEvolucoes();
+    return lista;
+  }
+  function renderListaPacientes(){
+    const tb = document.getElementById('pacTbody');
+    if(!tb) return;
+    tb.innerHTML = pacientesLista.map(r=>{
+      const p = patients[r.nome] || {};
+      const doc = p.cpf || p.ruc || p.rg || '';
+      const busca = (r.nome + ' ' + (r.tel || '') + ' ' + doc).toLowerCase();
+      return '<tr class="row" data-patient="' + esc(r.nome) + '" data-busca="' + esc(busca) + '" title="Abrir a ficha de ' + esc(r.nome) + '">'
+        + '<td><b>' + esc(r.nome) + '</b></td>'
+        + '<td class="muted">' + esc(r.tel || '—') + '</td>'
+        + '<td>' + (p.idioma === 'ES' ? 'ES' : 'PT') + '</td>'
+        + '<td data-prox="' + esc(r.nome) + '">—</td>'
+        + '<td class="saldo-cell" data-saldo="' + esc(r.nome) + '">—</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="muted">Nenhuma ficha no banco ainda.</td></tr>';
+    const contador = document.getElementById('pacCount');
+    if(contador) contador.textContent = pacientesLista.length;
+    const selo = document.querySelector('.nav button[data-screen="pacientes"] .badge');
+    if(selo) selo.textContent = pacientesLista.length;
+    renderSaldos();
+    renderProximas();
+  }
+
   const pendenteDe = p => Math.max(0, (p && p.orcamento ? p.orcamento : 0) - (p && p.pago ? p.pago : 0));
   function resumoSaldo(nome){
     const p = patients[nome] || {};
@@ -1943,9 +2155,17 @@
   });
 
   let pacienteAtual = 'Ana Souza';
-  function openPatient(name, aba){
-    const p = patients[name];
+  async function openPatient(name, aba){
     pacienteAtual = name;
+    const id = idDoPaciente(name);
+    if(id){
+      try{
+        await carregarFicha(id);          // GET /api/pacientes/<id> (+ financeiro e evoluções)
+      }catch(erro){
+        avisar(erro);                     // 401 já devolveu o overlay de login
+      }
+    }
+    const p = patients[name];
     document.getElementById('prontNome').textContent = name;
     document.getElementById('prontInfo').textContent = (p && p.info) ? p.info : 'Ficha nova — completar cadastro';
     document.getElementById('prontIdioma').innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-globo"/></svg> Fala ' + (p && p.idioma === 'ES' ? 'espanhol' : 'português');
@@ -2092,22 +2312,39 @@
      desc:'Exame clínico geral, radiografia panorâmica e montagem do plano de tratamento.',
      obs:'Necessário restauração no 26 e limpeza. Orçamento enviado.', anexos:[['exame','1 panorâmica']]}
   ];
+  function evolucoesDoPaciente(){
+    const reais = evolucoesPorPaciente[pacienteAtual];
+    if(!reais || !reais.length) return evolucoesSeed;   // banco ainda sem evolução: mantém o exemplo da tela
+    return reais.map(e=>({
+      data: String(e.data || '').slice(0,10).split('-').reverse().join('/'),
+      esp:'odonto',
+      servico: e.procedimento || 'Atendimento',
+      prof: e.profissional || '—',
+      valor:'—',
+      dentes: e.dente ? 'Dente ' + e.dente : '—',
+      materiais:'—',
+      desc: e.texto || '—',
+      obs:'—',
+      anexos:[]
+    }));
+  }
   function renderEvolucoes(){
     const tb = document.getElementById('evoTbody');
     tb.innerHTML = '';
-    evolucoesSeed.forEach((e,i)=>{
+    evolucoesDoPaciente().forEach((e,i)=>{
       const id = 'evo' + (i+1);
+      const data = e.data || dma(e.off);
       const row = document.createElement('tr');
       row.className = 'evo-row';
       row.dataset.evo = id;
       row.dataset.esp = e.esp;
       row.tabIndex = 0;
-      row.innerHTML = '<td><span class="chev"><svg class="ic" aria-hidden="true"><use href="#i-dir"/></svg></span></td><td>' + dma(e.off) + '</td><td>' + e.servico + '</td><td>' + e.prof + '</td><td><span class="pill">' + e.valor + '</span></td>';
+      row.innerHTML = '<td><span class="chev"><svg class="ic" aria-hidden="true"><use href="#i-dir"/></svg></span></td><td>' + data + '</td><td>' + e.servico + '</td><td>' + e.prof + '</td><td><span class="pill">' + e.valor + '</span></td>';
       const detail = document.createElement('tr');
       detail.className = 'evo-detail';
       detail.id = id;
       detail.innerHTML = '<td colspan="5"><div class="evo-box">'
-        + '<div class="ev-title"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg> Prontuário do dia — ' + dma(e.off) + '</div>'
+        + '<div class="ev-title"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg> Prontuário do dia — ' + data + '</div>'
         + '<div class="evo-fields">'
         + '<div class="f"><span class="k">Procedimento</span><span class="v">' + e.servico + '</span></div>'
         + '<div class="f"><span class="k">Profissional</span><span class="v">' + e.prof + '</span></div>'
@@ -2160,18 +2397,43 @@
     const todo = Object.keys(mapa).filter(k=>mapa[k] === 'todo').length;
     document.getElementById('odontoResumo').textContent = done + ' tratado(s) · ' + todo + ' a tratar';
   }
-  document.getElementById('odontoTeeth').addEventListener('click', e=>{
+  document.getElementById('odontoTeeth').addEventListener('click', async e=>{
     const b = e.target.closest('[data-dente]');
     if(!b) return;
     const d = +b.dataset.dente;
-    const mapa = (patients[pacienteAtual] || {}).dentes || {};
-    const est = mapa[d] === 'done' ? 'já tratado' : mapa[d] === 'todo' ? 'com tratamento a fazer' : 'sem tratamento registrado';
-    toast('Dente ' + d + ' — ' + est + '. A evolução completa fica na aba Prontuário.');
+    const p = patients[pacienteAtual] || {};
+    const mapa = p.dentes || (p.dentes = {});
+    const anterior = mapa[d];
+    const novo = anterior === 'done' ? 'todo' : 'done';   // clique alterna tratado / a tratar
+    if(!p.id){
+      toast('Dente ' + d + ' — abra a ficha de um paciente antes de marcar.');
+      return;
+    }
+    b.disabled = true;
+    try{
+      await api('/api/pacientes/' + p.id + '/dentes', {metodo:'POST', corpo:{dente:String(d), estado:novo}});
+      mapa[d] = novo;
+      renderOdontograma(pacienteAtual);
+      toast('Dente ' + d + ' — ' + (novo === 'done' ? 'tratado' : 'a tratar') + ' (salvo na ficha)');
+    }catch(erro){
+      if(anterior === undefined) delete mapa[d]; else mapa[d] = anterior;
+      avisar(erro);
+    }finally{
+      b.disabled = false;
+    }
   });
   function renderHistoricoFinanceiro(nome){
     const p = patients[nome] || {};
     const moeda = p.moeda || 'BRL';
     const tb = document.getElementById('histFinTbody');
+    const reais = finPorPaciente[nome] && finPorPaciente[nome].pagamentos;
+    if(reais && reais.length){
+      tb.innerHTML = reais.map(x=>{
+        const dia = String(x.data || '').slice(0,10).split('-').reverse().join('/');
+        return '<tr><td>' + dia + '</td><td>Recebimento — ' + esc(x.forma || 'caixa') + '</td><td>' + esc(x.forma || '—') + '</td><td class="mono"><span class="pill">' + fmtMoeda(x.valor, x.moeda || moeda) + '</span></td><td><span class="quit" style="font-weight:600">Pago</span></td></tr>';
+      }).join('');
+      return;
+    }
     tb.innerHTML = historicoFin.map(x=>{
       const valor = moeda === 'BRL' ? x.valor : deReais(x.valor, moeda);
       return '<tr><td>' + dma(x.dia) + '</td><td>' + x.desc + '</td><td>' + x.forma + '</td><td class="mono"><span class="pill">' + fmtMoeda(valor, moeda) + '</span></td><td><span class="quit" style="font-weight:600">Pago</span></td></tr>';
@@ -2321,7 +2583,7 @@
   document.getElementById('ncCancel').addEventListener('click', ()=>fecharModal(modalConsulta));
   modalConsulta.addEventListener('click', e=>{ if(e.target === modalConsulta) fecharModal(modalConsulta); });
 
-  document.getElementById('ncOk').addEventListener('click', ()=>{
+  document.getElementById('ncOk').addEventListener('click', async ()=>{
     const novaFicha = document.getElementById('ncNovoCampos').style.display !== 'none';
     let nome = document.getElementById('ncPaciente').value.trim();
     if(novaFicha) nome = document.getElementById('ncNovoNome').value.trim();
@@ -2340,18 +2602,20 @@
       const tel = document.getElementById('ncNovoTel').value.trim();
       const doc = document.getElementById('ncNovoDoc').value.trim();
       const idioma = document.getElementById('ncNovoIdioma').value === 'es' ? 'ES' : 'PT';
-      patients[nome] = {info:'Ficha nova · ' + (tel || 'telefone a confirmar'), tel:tel, idioma:idioma, moeda:'BRL', orcamento:0, pago:0, dentes:{},
-        cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : '', comoConheceu:'', indicacoes:0};
-      const tb = document.querySelector('#screen-pacientes table tbody');
-      const tr = document.createElement('tr');
-      tr.className = 'row';
-      tr.dataset.patient = nome;
-      tr.title = 'Abrir a ficha de ' + nome;
-      tr.innerHTML = '<td><b>' + nome + '</b></td><td class="muted">' + (tel || '—') + '</td><td>' + idioma + '</td><td data-prox="' + nome + '">—</td><td class="saldo-cell" data-saldo="' + nome + '">—</td>';
-      tb.appendChild(tr);
-      renderSaldos(); renderProximas();
-      document.getElementById('pacCount').textContent = Object.keys(patients).length;
-      toast('Ficha criada para ' + nome);
+      try{
+        const novo = await api('/api/pacientes', {metodo:'POST', corpo:{
+          nome:nome, tel:tel, idioma:idioma,
+          cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : ''
+        }});
+        patients[nome] = {id:novo.id, nome:nome, tel:tel, idioma:idioma, moeda:'BRL', orcamento:0, pago:0, pendente:0,
+          dentes:{}, cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : '',
+          comoConheceu:'', info:'Ficha nova · ' + (tel || 'telefone a confirmar')};
+        await carregarPacientes();          // a lista volta do banco — nada de ficha-fantasma
+        toast('Ficha criada para ' + nome + ' (salva no banco)');
+      }catch(erro){
+        avisar(erro);                       // 401/429/503 do backend aparecem pro usuário
+        return;
+      }
     }
 
     if(ncRemarcando){
@@ -2382,7 +2646,7 @@
   document.getElementById('evoCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalEvolucao')));
   document.getElementById('modalEvolucao').addEventListener('click', e=>{ if(e.target===document.getElementById('modalEvolucao')) fecharModal(document.getElementById('modalEvolucao')); });
 
-  document.getElementById('btnSalvarEvolucao').addEventListener('click', ()=>{
+  document.getElementById('btnSalvarEvolucao').addEventListener('click', async ()=>{
     const raw = document.getElementById('evoData').value || iso(0);
     const data = raw.split('-').reverse().join('/');
     const servico = servicoSel.value;
@@ -2395,6 +2659,30 @@
     const posTexto = posInstrucoes[servico] || '';
     const posDisparar = document.getElementById('posDisparar').checked;
     const id = 'evo' + Date.now();
+
+    /* grava primeiro no banco (POST /api/pacientes/<id>/evolucoes) */
+    const ficha = patients[pacienteAtual] || {};
+    if(!ficha.id){
+      toast('Abra a ficha do paciente antes de salvar a evolução');
+      return;
+    }
+    const casou = /Dente (\d{2})/.exec(local);
+    const botaoSalvar = document.getElementById('btnSalvarEvolucao');
+    botaoSalvar.disabled = true;
+    try{
+      await api('/api/pacientes/' + ficha.id + '/evolucoes', {metodo:'POST', corpo:{
+        procedimento: servico,
+        texto: (desc === '—' ? servico : desc) + (face ? ' (face ' + face + ')' : ''),
+        dente: casou ? casou[1] : '',
+        profissional: prof
+      }});
+      await carregarEvolucoes(ficha.id, pacienteAtual, false);   // atualiza a memória, sem redesenhar a linha nova
+    }catch(erro){
+      avisar(erro);
+      botaoSalvar.disabled = false;
+      return;
+    }
+    botaoSalvar.disabled = false;
 
     const row = document.createElement('tr');
     row.className = 'evo-row';
@@ -2949,10 +3237,7 @@
 
   renderFeedbacks();
 
-  // ===== Login / Logout (ponto de entrada e saída) =====
-  funcionarios.forEach(f=>{ f.senha = '1234'; });
-  let usuarioLogado = null;
-
+  // ===== Login / Logout contra o backend (token no sessionStorage) =====
   function horaAgora(){
     const d = new Date();
     const pad = n => String(n).padStart(2,'0');
@@ -2961,45 +3246,60 @@
   function dataHoje(){ return dma(0); }
 
   function preencherLogin(){
-    const sel = document.getElementById('loginUser');
-    sel.innerHTML = '';
-    funcionarios.forEach(f=>{
-      const o = document.createElement('option');
-      o.value = f.nome;
-      o.textContent = f.nome + ' — ' + f.cargo;
-      sel.appendChild(o);
-    });
+    const campo = document.getElementById('loginUser');
+    if(!campo) return;
+    try{ const ultimo = localStorage.getItem('cd-ultimo-usuario'); if(ultimo) campo.value = ultimo; }catch(_){ }
+    setTimeout(()=>{ try{ (campo.value ? document.getElementById('loginSenha') : campo).focus(); }catch(_){ } }, 40);
   }
 
-  function fazerLogin(){
-    const nome = document.getElementById('loginUser').value;
-    const senha = document.getElementById('loginSenha').value;
-    const f = funcionarios.find(x=>x.nome===nome);
-    if(!f){ toast('Usuário não encontrado'); return; }
-    if(senha !== f.senha){ toast('Senha incorreta'); return; }
-    usuarioLogado = f;
-    f.ponto = f.ponto || [];
-    f.ponto.unshift({data: dataHoje(), entrada: horaAgora(), saida:'—', status:'presente'});
-    document.getElementById('loginOverlay').classList.remove('open');
-    document.getElementById('loginSenha').value = '';
-    document.getElementById('topAvatar').textContent = f.nome.charAt(0);
-    toast('Bom dia, ' + f.nome + '! Ponto de entrada: ' + horaAgora());
-    renderPontoHoje();
+  async function fazerLogin(){
+    const login = (document.getElementById('loginUser').value || '').trim();
+    const senha = document.getElementById('loginSenha').value || '';
+    if(!login){ toast('Informe o usuário'); document.getElementById('loginUser').focus(); return; }
+    if(!senha){ toast('Informe a senha'); document.getElementById('loginSenha').focus(); return; }
+    if(!licencaAtiva){ toast(MENSAGEM_LICENCA); mostrarAvisoLicenca(); return; }
+    const botao = document.getElementById('btnLogin');
+    botao.disabled = true;
+    try{
+      const sessao = await api('/api/login', {metodo:'POST', semToken:true, corpo:{login:login, senha:senha}});
+      guardarToken(sessao.token);
+      guardarUsuario(sessao.usuario || login);
+      usuarioLogado = {nome: sessao.usuario || login, papel: sessao.papel || 'recepcao'};
+      try{ localStorage.setItem('cd-ultimo-usuario', login); }catch(_){ }
+      document.getElementById('loginSenha').value = '';
+      const aviso = document.getElementById('loginAviso');
+      if(aviso){ aviso.hidden = true; aviso.textContent = ''; }
+      document.getElementById('topAvatar').textContent = usuarioLogado.nome.charAt(0).toUpperCase();
+      await carregarPacientes();
+      const primeiro = patients[pacienteAtual] ? pacienteAtual : (pacientesLista[0] && pacientesLista[0].nome);
+      if(primeiro) await openPatient(primeiro, 'resumo');
+      document.getElementById('loginOverlay').classList.remove('open');
+      toast('Bom dia, ' + usuarioLogado.nome + '! Ponto de entrada: ' + horaAgora());
+      renderPontoHoje();
+    }catch(erro){
+      toast(erro && erro.rede ? 'Sem conexão com o servidor local — não deu para entrar'
+                              : ((erro && erro.message) || 'Não deu para entrar'));
+    }finally{
+      botao.disabled = false;
+    }
   }
 
   document.getElementById('btnLogin').addEventListener('click', fazerLogin);
   document.getElementById('loginSenha').addEventListener('keydown', e=>{
     if(e.key === 'Enter') fazerLogin();
   });
+  document.getElementById('loginUser').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') document.getElementById('loginSenha').focus();
+  });
 
-  document.getElementById('btnLogout').addEventListener('click', ()=>{
-    if(!usuarioLogado) return;
-    const ultimo = (usuarioLogado.ponto||[]).find(p=>p.saida==='—');
-    if(ultimo) ultimo.saida = horaAgora();
-    toast('Ponto de saída: ' + horaAgora() + '. Até logo, ' + usuarioLogado.nome + '!');
+  document.getElementById('btnLogout').addEventListener('click', async ()=>{
+    if(token()){
+      try{ await api('/api/logout', {metodo:'POST', corpo:{}}); }
+      catch(erro){ /* servidor fora do ar: o logout local vale do mesmo jeito */ }
+    }
+    voltarParaLogin();
+    toast('Ponto de saída: ' + horaAgora() + '. Até logo!');
     renderPontoHoje();
-    usuarioLogado = null;
-    document.getElementById('loginOverlay').classList.add('open');
   });
 
   // ===== Novas consultas (revisão do robô) =====
@@ -3461,8 +3761,9 @@
   });
   document.getElementById('recCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalReceber')));
   document.getElementById('modalReceber').addEventListener('click', e=>{ if(e.target === document.getElementById('modalReceber')) fecharModal(document.getElementById('modalReceber')); });
-  document.getElementById('recOk').addEventListener('click', ()=>{
+  document.getElementById('recOk').addEventListener('click', async ()=>{
     const p = patients[recebendoDe];
+    if(!p){ toast('Nenhuma ficha para ' + recebendoDe); return; }
     const caixas = [
       {moeda:'BRL', campo:'recValorBRL', nome:'Caixa Real'},
       {moeda:'USD', campo:'recValorUSD', nome:'Caixa Dólar'},
@@ -3470,20 +3771,42 @@
     ].map(c=>({moeda:c.moeda, nome:c.nome, valor:parseNum(document.getElementById(c.campo).value)})).filter(c=>c.valor > 0);
     if(!caixas.length){ toast('Informe em qual caixa o dinheiro entrou'); return; }
     const obs = document.getElementById('recObs').value.trim();
-    let creditado = 0;
-    caixas.forEach(c=>{
-      creditado += deReais(emReais(c.valor, c.moeda), p.moeda || 'BRL');
-      lancamentos.unshift({dia:0, hora:horaAgora(), nome:recebendoDe, desc:obs || 'Recebimento', forma:c.nome, valor:c.valor, moeda:c.moeda});
-    });
-    p.pago = (p.pago || 0) + creditado;
-    renderLancamentos();
-    renderCaixa();
-    renderSaldos();
-    renderAgenda();
-    renderProximas();
-    if(pacienteAtual === recebendoDe) atualizarSaldoFicha(recebendoDe);
-    fecharModal(document.getElementById('modalReceber'));
-    toast('Recebido de ' + recebendoDe + ': ' + caixas.map(c=>fmtMoeda(c.valor, c.moeda)).join(' + ') + ' — pendência agora ' + fmtMoeda(pendenteDe(p), p.moeda));
+    const botao = document.getElementById('recOk');
+    botao.disabled = true;
+    try{
+      if(p.id){
+        for(const c of caixas){
+          await api('/api/pacientes/' + p.id + '/pagamentos', {metodo:'POST', corpo:{
+            valor:c.valor, moeda:c.moeda, forma:(c.nome + (obs ? ' — ' + obs : '')).slice(0,40)
+          }});
+        }
+        await carregarFicha(p.id);            // saldo/pendência voltam do banco
+      }else{
+        let creditado = 0;
+        caixas.forEach(c=>{ creditado += deReais(emReais(c.valor, c.moeda), p.moeda || 'BRL'); });
+        p.pago = (p.pago || 0) + creditado;
+      }
+      caixas.forEach(c=>{
+        lancamentos.unshift({dia:0, hora:horaAgora(), nome:recebendoDe, desc:obs || 'Recebimento', forma:c.nome, valor:c.valor, moeda:c.moeda});
+      });
+      renderLancamentos();
+      renderCaixa();
+      renderSaldos();
+      renderOrcPacientes();
+      renderAgenda();
+      renderProximas();
+      if(pacienteAtual === recebendoDe){
+        atualizarSaldoFicha(recebendoDe);
+        renderHistoricoFinanceiro(recebendoDe);
+        renderOrcDetalhe(recebendoDe);
+      }
+      fecharModal(document.getElementById('modalReceber'));
+      toast('Recebido de ' + recebendoDe + ': ' + caixas.map(c=>fmtMoeda(c.valor, c.moeda)).join(' + ') + ' — pendência agora ' + fmtMoeda(pendenteDe(p), p.moeda));
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
   });
 
   // ===== Dinheiro: recebimentos e caixa por moeda =====
@@ -3575,11 +3898,82 @@
   renderLancamentos();
   renderCaixa();
   renderPontoHoje();
-  atualizarSaldoFicha('Ana Souza');
-  renderOdontograma('Ana Souza');
-  renderHistoricoFinanceiro('Ana Souza');
-  renderFeedbackPaciente('Ana Souza');
   abrirAba('resumo');
+
+  /* ============================================================
+     BOOT: licença (GET /api/licenca, livre) -> sessão -> dados.
+     Sem token a UI fica no overlay de login; licença expirada
+     bloqueia o próprio login; rede fora não quebra a tela.
+     ============================================================ */
+  async function entrarComToken(){
+    await carregarPacientes();
+    const nome = patients[pacienteAtual] ? pacienteAtual : (pacientesLista[0] && pacientesLista[0].nome);
+    if(nome) await openPatient(nome, 'resumo');
+    document.getElementById('loginOverlay').classList.remove('open');
+    document.getElementById('topAvatar').textContent = (usuarioDaSessao() || 'U').charAt(0).toUpperCase();
+  }
+  async function ligarSistema(){
+    try{
+      const estado = await api('/api/licenca', {semToken:true});
+      licencaAtiva = !estado || estado.ativa !== false;
+      licencaConferida = true;
+    }catch(erro){
+      licencaConferida = false;      // servidor fora do ar: avisa e não trava
+    }
+    if(licencaConferida && !licencaAtiva){ mostrarAvisoLicenca(); return; }
+    if(!token()){
+      document.getElementById('loginOverlay').classList.add('open');   // sem token → é login
+      return;
+    }
+    try{
+      await entrarComToken();
+    }catch(erro){
+      if(!erro.rede) avisar(erro);
+      document.getElementById('loginOverlay').classList.add('open');
+    }
+  }
+
+  /* ===== Novo orçamento (POST /api/pacientes/<id>/orcamentos) ===== */
+  document.getElementById('btnNovoOrcamento').addEventListener('click', ()=>{
+    const p = patients[pacienteAtual];
+    if(!p || !p.id){ toast('Abra a ficha do paciente antes de montar o orçamento'); return; }
+    document.getElementById('orcModalPaciente').textContent = pacienteAtual;
+    document.getElementById('orcDescricao').value = '';
+    document.getElementById('orcValor').value = '';
+    document.getElementById('orcMoeda').value = p.moeda || 'BRL';
+    abrirModal(document.getElementById('modalOrcamento'));
+    setTimeout(()=>{ try{ document.getElementById('orcDescricao').focus(); }catch(_){} }, 40);
+  });
+  document.getElementById('orcCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalOrcamento')));
+  document.getElementById('modalOrcamento').addEventListener('click', e=>{
+    if(e.target === document.getElementById('modalOrcamento')) fecharModal(document.getElementById('modalOrcamento'));
+  });
+  document.getElementById('orcOk').addEventListener('click', async ()=>{
+    const p = patients[pacienteAtual];
+    if(!p || !p.id){ toast('Abra a ficha do paciente antes de montar o orçamento'); return; }
+    const descricao = document.getElementById('orcDescricao').value.trim();
+    const valor = parseNum(document.getElementById('orcValor').value);
+    const moeda = document.getElementById('orcMoeda').value;
+    if(!descricao){ toast('Descreva o procedimento do orçamento'); return; }
+    if(!valor || valor <= 0){ toast('Informe um valor maior que zero'); return; }
+    const botao = document.getElementById('orcOk');
+    botao.disabled = true;
+    try{
+      await api('/api/pacientes/' + p.id + '/orcamentos', {metodo:'POST', corpo:{descricao:descricao, valor:valor, moeda:moeda}});
+      await carregarFicha(p.id);                 // orçamento e saldo voltam do banco
+      renderOrcPacientes();
+      if(pacienteAtual){ renderOrcDetalhe(pacienteAtual); atualizarSaldoFicha(pacienteAtual); }
+      renderSaldos();
+      fecharModal(document.getElementById('modalOrcamento'));
+      toast('Orçamento de ' + pacienteAtual + ' agora é ' + fmtMoeda(p.orcamento, p.moeda));
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
+  });
+
+  ligarSistema();
 
   /* ===== BARRA DE MENUS DO PROGRAMA (as telas ficam na lateral, os comandos aqui) ===== */
   const itensMenu = [...document.querySelectorAll('.mb-item')];
