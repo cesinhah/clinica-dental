@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17506e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Painel do dono · Clínica Dental</title>
+<!--
+  PAINEL DO DONO NO CELULAR — página feita para o polegar, não é o sistema inteiro.
+
+  Arquivo à parte do index.html de propósito: o webui do desktop (index.html) não é
+  tocado por nada daqui, e este arquivo não lê nada dele. Os dois são servidos pelo
+  MESMO servidor.py (GET /mobile.html), usam o MESMO login (Bearer /api/login) e as
+  MESMAS rotas — nada de endpoint novo além de /api/agenda, que o desktop ainda não
+  tinha.
+
+  As três telas são o que o dono confere de longe:
+    HOJE ........ caixa do dia por moeda (BRL/USD/GS), recebimentos do dia e a agenda;
+    PENDÊNCIAS .. quem ainda deve, por moeda, com o botão de WhatsApp já pronto;
+    CONVERSAS ... quem está esperando atendente humano (aguardando_humano).
+  Rodapé: estado da licença. Topo: botão de atualizar.
+
+  A token vive no localStorage (o dono não reloga cada vez que abre; o desktop guarda
+  a sessão dele do jeito dele, em outro arquivo). Tudo que vem do servidor entra na
+  tela por esc() — nome de paciente é texto digitado por gente e não vira HTML.
+-->
+<style>
+  :root{
+    color-scheme:light;
+    --clinic:#17506e;
+    --clinic-dark:#123c53;
+    --clinic-soft:#e7eff4;
+    --bg:#e9edf2;
+    --card:#ffffff;
+    --surface:#f6f8fa;
+    --border:#ccd4dd;
+    --border-soft:#e4e9ef;
+    --text:#0f172a;
+    --muted:#475569;
+    --green:#15803d;
+    --green-soft:#dcfce7;
+    --amber:#b45309;
+    --amber-soft:#fef3c7;
+    --red:#b91c1c;
+    --red-soft:#fee2e2;
+    --wa:#1da851;
+    --shadow-card:0 1px 2px rgba(15,23,42,.06);
+    --veil:rgba(15,23,42,.5);
+    --topo-h:58px;
+    --abas-h:60px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Tahoma,Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  :focus-visible{outline:2px solid var(--clinic);outline-offset:2px}
+  .some{display:none !important}
+
+  /* ---------- topo fixo ---------- */
+  .topo{
+    position:fixed;top:0;left:0;right:0;height:var(--topo-h);z-index:20;
+    display:flex;align-items:center;gap:10px;padding:0 12px;
+    background:linear-gradient(180deg,#1d5f86,var(--clinic));
+    color:#fff;
+    padding-top:env(safe-area-inset-top);
+  }
+  .topo .txt{flex:1;min-width:0}
+  .topo .titulo{font-size:16px;font-weight:700;line-height:1.2}
+  .topo .sub{font-size:11.5px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #btnAtualizar{
+    min-width:44px;min-height:44px;border:1px solid rgba(255,255,255,.45);
+    background:rgba(255,255,255,.12);color:#fff;border-radius:10px;
+    font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;
+    padding:0 12px;
+  }
+  #btnAtualizar:active{background:rgba(255,255,255,.28)}
+  #btnAtualizar[disabled]{opacity:.6}
+
+  /* ---------- aviso de rede / licença no topo do conteúdo ---------- */
+  #avisoRede{
+    margin:8px 10px 0;padding:9px 12px;border-radius:10px;font-size:12.5px;
+    background:var(--amber-soft);color:var(--amber);border:1px solid #fcd34d;
+  }
+
+  /* ---------- conteúdo ---------- */
+  main{
+    padding:calc(var(--topo-h) + env(safe-area-inset-top) + 8px) 0
+            calc(var(--abas-h) + env(safe-area-inset-bottom) + 12px);
+  }
+  .tela{display:none;padding:0 10px}
+  .tela.ativa{display:block}
+  .cartao{
+    background:var(--card);border:1px solid var(--border-soft);border-radius:12px;
+    box-shadow:var(--shadow-card);padding:12px;margin-bottom:10px;
+  }
+  .cartao > h2{
+    font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+    font-weight:700;display:flex;align-items:baseline;gap:8px;margin-bottom:8px;
+  }
+  .cartao > h2 .quando{margin-left:auto;font-size:11.5px;font-weight:600;text-transform:none;letter-spacing:0}
+  .vazio{color:var(--muted);font-size:13px;padding:10px 2px}
+  .erro{color:var(--red);font-size:12.5px;background:var(--red-soft);border-radius:8px;padding:8px 10px}
+
+  /* ---------- dinheiro ---------- */
+  .moeda-linha{
+    display:flex;align-items:baseline;gap:10px;padding:7px 2px;
+    border-bottom:1px dashed var(--border-soft);
+  }
+  .moeda-linha:last-child{border-bottom:0}
+  .moeda-linha .nome{color:var(--muted);font-size:12.5px;min-width:78px}
+  .moeda-linha .valor{margin-left:auto;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .moeda-linha.zero .valor{color:var(--muted);font-weight:600}
+  .recebido{
+    display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;
+    margin-top:8px;padding-top:9px;border-top:1px solid var(--border-soft);
+  }
+  .recebido .rotulo{font-size:12.5px;color:var(--muted)}
+  .recebido .total{font-size:16px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;margin-left:auto}
+  .recebido .aviso{font-size:11.5px;color:var(--amber);flex-basis:100%}
+
+  /* ---------- linhas de gente (agenda, pendência, conversa) ---------- */
+  .linha{
+    display:flex;gap:10px;align-items:center;
+    padding:10px 2px;border-bottom:1px solid var(--border-soft);
+  }
+  .linha:last-child{border-bottom:0}
+  .linha .info{flex:1;min-width:0}
+  .linha .quem{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
+  .linha .detalhe{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+  .linha .hora{
+    font-size:15px;font-weight:700;color:var(--clinic-dark);min-width:52px;
+    font-variant-numeric:tabular-nums;
+  }
+  .linha .deve{font-size:14px;font-weight:700;color:var(--red);text-align:right}
+  .linha .deve small{display:block;font-size:11px;font-weight:600;color:var(--muted)}
+  .btn-wa{
+    min-height:44px;min-width:44px;padding:0 12px;border-radius:10px;border:0;
+    background:var(--wa);color:#fff;font-weight:700;font-size:13px;
+    text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  .btn-wa.mudo{background:var(--surface);color:var(--muted);border:1px solid var(--border);font-weight:600}
+  .chip{
+    display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;
+    background:var(--clinic-soft);color:var(--clinic-dark);
+  }
+  .chip.espera{background:var(--amber-soft);color:var(--amber)}
+  .chip.ok{background:var(--green-soft);color:var(--green)}
+
+  /* ---------- abas ---------- */
+  #abas{
+    position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;
+    height:calc(var(--abas-h) + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:var(--card);border-top:1px solid var(--border);
+  }
+  #abas button{
+    flex:1;position:relative;border:0;background:transparent;color:var(--muted);
+    font-size:12px;font-weight:700;min-height:44px;
+  }
+  #abas button.ativa{color:var(--clinic);box-shadow:inset 0 2px 0 var(--clinic)}
+  .badge{
+    display:inline-block;min-width:19px;height:19px;line-height:19px;padding:0 5px;
+    border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700;
+    vertical-align:1px;margin-left:3px;
+  }
+  .badge.ambar{background:var(--amber)}
+
+  /* ---------- rodapé (licença) ---------- */
+  .rodape{
+    display:flex;align-items:center;gap:10px;padding:6px 12px 10px;
+    font-size:11.5px;color:var(--muted);
+  }
+  .rodape .pino{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+  .rodape.ok .pino{background:var(--green)}
+  .rodape.ruim .pino{background:var(--red)}
+  .rodape .texto{flex:1}
+  #btnSair{
+    border:1px solid var(--border);background:var(--card);color:var(--muted);
+    border-radius:8px;font-size:12px;font-weight:600;min-height:34px;padding:0 10px;
+  }
+
+  /* ---------- login ---------- */
+  #loginOverlay{
+    position:fixed;inset:0;z-index:40;background:var(--veil);
+    display:flex;align-items:center;justify-content:center;padding:18px;
+  }
+  .login-cartao{
+    background:var(--card);border-radius:14px;width:100%;max-width:360px;
+    padding:20px 18px;box-shadow:0 14px 34px rgba(15,23,42,.3);
+  }
+  .login-cartao h1{font-size:18px;margin-bottom:2px;color:var(--clinic-dark)}
+  .login-cartao p{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .campo{margin-bottom:12px}
+  .campo label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .campo input{
+    width:100%;min-height:46px;font-size:16px;padding:0 12px;border-radius:10px;
+    border:1px solid var(--border);background:#fff;color:var(--text);
+  }
+  #loginAviso{font-size:12.5px;color:var(--red);min-height:17px;margin-bottom:8px}
+  #btnLogin{
+    width:100%;min-height:48px;border:0;border-radius:10px;color:#fff;font-size:15px;
+    font-weight:700;background:linear-gradient(180deg,#1d5f86,var(--clinic));
+  }
+  #btnLogin[disabled]{opacity:.6}
+  .login-pe{font-size:11.5px;color:var(--muted);margin-top:12px;text-align:center}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="txt">
+    <div class="titulo" id="topoTitulo">Hoje</div>
+    <div class="sub" id="topoSub">—</div>
+  </div>
+  <button type="button" id="btnAtualizar">Atualizar</button>
+</header>
+
+<div id="app" class="some">
+  <div id="avisoRede" class="some"></div>
+  <main>
+    <!-- ============ HOJE ============ -->
+    <section class="tela ativa" id="tela-hoje">
+      <div class="cartao">
+        <h2>Caixa do dia <span class="quando" id="caixaDia"></span></h2>
+        <div id="caixaMoedas"></div>
+        <div class="recebido" id="recebidoDia"></div>
+      </div>
+      <div class="cartao">
+        <h2>Agenda de hoje <span class="quando" id="agendaQtd"></span></h2>
+        <div id="agendaLista"></div>
+      </div>
+    </section>
+
+    <!-- ============ PENDÊNCIAS ============ -->
+    <section class="tela" id="tela-pendencias">
+      <div class="cartao">
+        <h2>Quem ainda deve <span class="quando" id="pendQtd"></span></h2>
+        <div id="pendLista"></div>
+      </div>
+    </section>
+
+    <!-- ============ CONVERSAS ============ -->
+    <section class="tela" id="tela-conversas">
+      <div class="cartao">
+        <h2>Esperando atendente <span class="quando" id="convQtd"></span></h2>
+        <div id="convLista"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape" id="rodape">
+    <span class="pino"></span>
+    <span class="texto" id="licenca">verificando licença…</span>
+    <button type="button" id="btnSair">Sair</button>
+  </footer>
+</div>
+
+<nav id="abas" class="some">
+  <button type="button" data-tela="hoje" class="ativa">Hoje</button>
+  <button type="button" data-tela="pendencias">Pendências<span class="badge some" id="badgePend">0</span></button>
+  <button type="button" data-tela="conversas">Conversas<span class="badge ambar some" id="badgeConv">0</span></button>
+</nav>
+
+<div id="loginOverlay">
+  <form class="login-cartao" id="formLogin">
+    <h1>Painel do dono</h1>
+    <p>Caixa do dia, pendências e conversas da clínica.</p>
+    <div class="campo">
+      <label for="loginUser">Usuário</label>
+      <input type="text" id="loginUser" autocomplete="username" autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="campo">
+      <label for="loginSenha">Senha</label>
+      <input type="password" id="loginSenha" autocomplete="current-password">
+    </div>
+    <div id="loginAviso"></div>
+    <button type="submit" id="btnLogin">Entrar</button>
+    <div class="login-pe" id="loginLicenca">—</div>
+  </form>
+</div>
+
+<script>
+  'use strict';
+  /* ============================================================
+     CAMADA DE DADOS — as mesmas rotas do desktop, o mesmo token.
+     A diferença é só onde o token mora: aqui no localStorage, para o
+     dono não relogar toda vez que abre o celular.
+     ============================================================ */
+  const TOKEN_KEY = 'dental.painel.token';
+  const USUARIO_KEY = 'dental.painel.usuario';
+  const LIMITE_CONVERSAS = 20;          // conversas aguardando humano na tela
+  const MOEDAS = ['BRL','USD','GS'];
+  const precos = {BRL:{simbolo:'R$',dec:2}, USD:{simbolo:'US$',dec:2}, GS:{simbolo:'Gs',dec:0}};
+  const nomesMoeda = {BRL:'Reais', USD:'Dólares', GS:'Guaranis'};
+  const LIMITE_PARALELO = 6;            // fichas puxadas de uma vez nas pendências
+
+  function token(){
+    try{ return localStorage.getItem(TOKEN_KEY) || ''; }catch(_){ return ''; }
+  }
+
+  function guardarToken(t, u){
+    try{
+      if(t){ localStorage.setItem(TOKEN_KEY, t); } else { localStorage.removeItem(TOKEN_KEY); }
+      if(u){ localStorage.setItem(USUARIO_KEY, u); } else { localStorage.removeItem(USUARIO_KEY); }
+    }catch(_){ }
+  }
+
+  function usuarioDaSessao(){
+    try{ return localStorage.getItem(USUARIO_KEY) || ''; }catch(_){ return ''; }
+  }
+
+  async function api(caminho, opcoes){
+    opcoes = opcoes || {};
+    const cabecalhos = Object.assign({}, opcoes.cabecalhos || {});
+    if(!opcoes.semToken && token()) cabecalhos['Authorization'] = 'Bearer ' + token();
+    const config = {method: opcoes.metodo || 'GET', headers: cabecalhos};
+    if(opcoes.corpo !== undefined){
+      cabecalhos['Content-Type'] = 'application/json';
+      config.body = JSON.stringify(opcoes.corpo);
+    }
+    let resposta;
+    try{
+      resposta = await fetch(caminho, config);
+    }catch(_){
+      avisoRede('Sem conexão com o servidor da clínica — os números podem estar velhos.');
+      const erro = new Error('sem conexão com o servidor da clínica');
+      erro.rede = true;
+      throw erro;
+    }
+    let dados = null;
+    try{ dados = await resposta.json(); }catch(_){ dados = null; }
+    if(resposta.ok){ avisoRede(''); return dados; }
+    const mensagem = (dados && dados.erro) || ('o servidor respondeu ' + resposta.status);
+    const erro = new Error(mensagem);
+    erro.status = resposta.status;
+    if(resposta.status === 401 && !opcoes.semToken){
+      pedirLogin(mensagem);                     // sessão velha: volta para o login
+    }else if(resposta.status === 503){
+      avisoRede(mensagem);                      // licença: o rodapé explica o resto
+      mostrarLicenca(dados && dados.licenca);
+    }
+    throw erro;
+  }
+
+  /* ============================================================
+     CONTAS PURAS (o que o teste mede sem navegador)
+     ============================================================ */
+
+  /* 'AAAA-MM-DD' do relógio do aparelho — o mesmo dia que o servidor devolve sem
+     ?data=; o celular do dono costuma estar no fuso da clínica. */
+  function isoDia(off){
+    const d = new Date();
+    d.setHours(12,0,0,0);
+    d.setDate(d.getDate() + (off || 0));
+    const p = n => String(n).padStart(2,'0');
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+  }
+
+  function dataLonga(dia){
+    const partes = String(dia || '').split('-');
+    if(partes.length !== 3) return dia || '';
+    const d = new Date(Number(partes[0]), Number(partes[1])-1, Number(partes[2]), 12, 0, 0, 0);
+    return d.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  }
+
+  function fmtMoeda(v, moeda){
+    const p = precos[moeda] || precos.BRL;
+    return p.simbolo + ' ' + (Number(v) || 0).toLocaleString('pt-BR',
+      {minimumFractionDigits:p.dec, maximumFractionDigits:p.dec});
+  }
+
+  /* Só dígitos: é o que o wa.me aceita. */
+  function digitos(tel){
+    return String(tel == null ? '' : tel).replace(/\D/g, '');
+  }
+
+  /* Link do WhatsApp. Número curto (10 ou 11 dígitos) é brasileiro sem o 55; já
+     vem com o DDI quem foi cadastrado com ele (+55, +595 do Paraguai). Sem número
+     não existe link — a tela mostra o botão mudo em vez de um link quebrado. */
+  function waLink(tel, texto){
+    const d = digitos(tel);
+    if(!d) return '';
+    const numero = d.length <= 11 ? '55' + d : d;
+    return 'https://wa.me/' + numero + (texto ? '?text=' + encodeURIComponent(texto) : '');
+  }
+
+  /* O que o paciente deve, MOEDA POR MOEDA (saldoPorMoeda do /api/pacientes/<id>):
+     somar real com guarani daria um número sem sentido. */
+  function pendentesDoResumo(resumo){
+    const saldo = (resumo && resumo.saldoPorMoeda) || {};
+    return MOEDAS.filter(m => saldo[m] && Number(saldo[m].pendente) > 0)
+      .map(m => ({moeda:m, valor:Number(saldo[m].pendente)}));
+  }
+
+  /* Recebimentos do dia (linhas de /api/pagamentos?de=hoje&ate=hoje) somados em
+     reais. Pagamento de outra moeda sem cotação (nem gravada nele, nem a do dia)
+     some do total — e o total sai nulo com o motivo, em vez de somar 1:1 calado. */
+  function totalDoDia(pagamentos, cotacao){
+    const lista = Array.isArray(pagamentos) ? pagamentos : [];
+    const taxas = cotacao || {};
+    const faltando = [];
+    let reais = 0;
+    for(const p of lista){
+      const moeda = precos[p && p.moeda] ? p.moeda : 'BRL';
+      const gravada = Number(p && p.cotacao) || 0;
+      const taxa = gravada || Number(taxas[moeda]) || 0;
+      if(moeda !== 'BRL' && !taxa){
+        if(faltando.indexOf(moeda) < 0) faltando.push(moeda);
+        continue;
+      }
+      reais += Number((p && p.valor) || 0) * (taxa || 1);
+    }
+    return {
+      recebimentos: lista.length,
+      reais: faltando.length ? null : Math.round(reais * 100) / 100,
+      faltando: faltando,
+    };
+  }
+
+  /* A fila humana, UMA linha por paciente (a mensagem mais nova de cada um): o
+     /api/conversas vem do mais novo para o mais antigo, com aguardando_humano só
+     nas mensagens trocadas desde o pedido de atendente. */
+  function aguardandoHumano(conversas, limite){
+    const tela = [];
+    const vistos = {};
+    for(const c of (Array.isArray(conversas) ? conversas : [])){
+      if(!c || !c.aguardando_humano) continue;
+      const chave = c.paciente_id == null ? 'msg:' + c.id : 'pac:' + c.paciente_id;
+      if(vistos[chave]) continue;
+      vistos[chave] = true;
+      tela.push(c);
+      if(tela.length >= (limite || LIMITE_CONVERSAS)) break;
+    }
+    return tela;
+  }
+
+  /* O rodapé: licença ativa (com os dias que sobram) ou o motivo de estar parada. */
+  function textoLicenca(lic){
+    if(!lic) return {texto:'licença: sem resposta do servidor', tom:'aviso'};
+    if(lic.ativa){
+      const dias = Number(lic.dias_restantes);
+      const resta = isFinite(dias) && dias > 0 ? ' · ' + Math.floor(dias) + 'd restantes' : '';
+      return {texto:'licença ativa' + resta, tom:'ok'};
+    }
+    const motivos = {expirada:'expirada', nunca_verificada:'nunca verificada',
+                     resposta_invalida:'resposta inválida', resposta_nao_assinada:'resposta não assinada'};
+    const motivo = motivos[lic.motivo] || lic.motivo || 'inativa';
+    return {texto:'licença ' + motivo + ' — fale com o suporte', tom:'ruim'};
+  }
+
+  /* ============================================================
+     TELAS (HTML em texto — testável sem navegador, escapado sempre)
+     ============================================================ */
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,
+      c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function htmlMoedas(caixa){
+    const moedas = (caixa && caixa.moedas) || {};
+    return MOEDAS.map(m => {
+      const valor = Number((moedas[m] || {}).hoje || 0);
+      return '<div class="moeda-linha' + (valor ? '' : ' zero') + '">'
+        + '<span class="nome">' + nomesMoeda[m] + '</span>'
+        + '<span class="valor">' + esc(fmtMoeda(valor, m)) + '</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  function htmlRecebido(pagamentos, cotacao){
+    const total = totalDoDia(pagamentos, cotacao);
+    let html = '<span class="rotulo">' + total.recebimentos
+      + (total.recebimentos === 1 ? ' recebimento hoje' : ' recebimentos hoje') + '</span>';
+    if(total.reais === null){
+      html += '<span class="total">R$ —</span>'
+        + '<span class="aviso">sem cotação de ' + esc(total.faltando.join(', '))
+        + ' — total não somado (nada de somar 1:1 às cegas)</span>';
+    }else{
+      html += '<span class="total">' + esc(fmtMoeda(total.reais, 'BRL')) + '</span>';
+    }
+    return html;
+  }
+
+  function htmlAgenda(itens){
+    if(!itens || !itens.length){
+      return '<div class="vazio">Nenhuma consulta marcada para hoje.</div>';
+    }
+    return itens.map(a => {
+      const nome = a.paciente || 'Paciente removido';
+      const procedimento = a.procedimento ? esc(a.procedimento) : 'Consulta';
+      const link = waLink(a.tel, 'Olá ' + nome + ', aqui é da clínica — confirmando sua consulta de hoje.');
+      const botao = link
+        ? '<a class="btn-wa" href="' + esc(link) + '" target="_blank" rel="noopener">WhatsApp</a>'
+        : '<span class="btn-wa mudo">sem telefone</span>';
+      const situacao = a.status === 'confirmada'
+        ? '<span class="chip ok">confirmada</span>' : '<span class="chip">agendada</span>';
+      return '<div class="linha">'
+        + '<span class="hora">' + esc(a.hora || '--:--') + '</span>'
+        + '<span class="info"><span class="quem">' + esc(nome) + '</span>'
+        + '<span class="detalhe">' + procedimento + ' · ' + situacao + '</span></span>'
+        + botao + '</div>';
+    }).join('');
+  }
+
+  function htmlPendencias(pacientes){
+    if(!pacientes || !pacientes.length){
+      return '<div class="vazio">Ninguém com saldo em aberto.</div>';
+    }
+    return pacientes.map(p => {
+      const deves = p.pendentes.map(d => '<span class="deve">' + esc(fmtMoeda(d.valor, d.moeda))
+        + '<small>' + esc(nomesMoeda[d.moeda]) + '</small></span>').join('');
+      const link = waLink(p.tel, 'Olá ' + p.nome + ', aqui é da clínica — sobre o valor em aberto do seu tratamento.');
+      const botao = link
+        ? '<a class="btn-wa" href="' + esc(link) + '" target="_blank" rel="noopener">WhatsApp</a>'
+        : '<span class="btn-wa mudo">sem telefone</span>';
+      return '<div class="linha">'
+        + '<span class="info"><span class="quem">' + esc(p.nome) + '</span>'
+        + '<span class="detalhe">saldo em aberto</span></span>'
+        + deves + botao + '</div>';
+    }).join('');
+  }
+
+  function htmlConversas(itens){
+    if(!itens || !itens.length){
+      return '<div class="vazio">Ninguém esperando atendente agora.</div>';
+    }
+    return itens.map(c => {
+      const nome = c.paciente || 'Número não identificado';
+      const quando = String(c.data || '').replace('T', ' ').slice(0, 16);
+      const texto = String(c.texto || '').slice(0, 140);
+      const link = waLink(c.tel, '');
+      const botao = link
+        ? '<a class="btn-wa" href="' + esc(link) + '" target="_blank" rel="noopener">Responder</a>'
+        : '<span class="btn-wa mudo">sem telefone</span>';
+      return '<div class="linha">'
+        + '<span class="info"><span class="quem">' + esc(nome) + ' <span class="chip espera">aguardando</span></span>'
+        + '<span class="detalhe">' + esc(quando) + ' · ' + esc(texto) + '</span></span>'
+        + botao + '</div>';
+    }).join('');
+  }
+
+  /* ============================================================
+     COLAGEM NA TELA
+     ============================================================ */
+  function el(id){ return document.getElementById(id); }
+
+  function avisoRede(texto){
+    const caixa = el('avisoRede');
+    if(!caixa) return;
+    caixa.textContent = texto || '';
+    caixa.classList.toggle('some', !texto);
+  }
+
+  function mostrarLicenca(lic){
+    const estado = textoLicenca(lic);
+    const rodape = el('rodape');
+    rodape.classList.toggle('ok', estado.tom === 'ok');
+    rodape.classList.toggle('ruim', estado.tom === 'ruim');
+    el('licenca').textContent = estado.texto;
+    el('loginLicenca').textContent = lic && lic.ativa
+      ? 'Painel do dono · ' + (usuarioDaSessao() || 'clínica') : estado.texto;
+  }
+
+  function pedirLogin(mensagem){
+    guardarToken('', '');
+    el('app').classList.add('some');
+    el('abas').classList.add('some');
+    el('loginOverlay').classList.remove('some');
+    el('loginAviso').textContent = mensagem || '';
+    el('btnLogin').disabled = false;
+    el('btnLogin').textContent = 'Entrar';
+    el('loginSenha').value = '';
+    if(!el('loginUser').value) el('loginUser').value = usuarioDaSessao();
+  }
+
+  function entrarNaTela(usuario){
+    el('loginOverlay').classList.add('some');
+    el('app').classList.remove('some');
+    el('abas').classList.remove('some');
+    el('loginAviso').textContent = '';
+    el('topoSub').textContent = (usuario || usuarioDaSessao() || 'dono') + ' · ' + dataLonga(isoDia(0));
+  }
+
+  function trocarTela(nome){
+    document.querySelectorAll('.tela').forEach(s => s.classList.toggle('ativa', s.id === 'tela-' + nome));
+    document.querySelectorAll('#abas button').forEach(b => b.classList.toggle('ativa', b.dataset.tela === nome));
+    const titulos = {hoje:'Hoje', pendencias:'Pendências', conversas:'Conversas'};
+    el('topoTitulo').textContent = titulos[nome] || 'Hoje';
+    if(!trocado[nome]) carregar(nome);
+  }
+
+  /* ============================================================
+     CARREGAR — cada bloco cai sozinho (um 403 de setor não apaga os outros)
+     ============================================================ */
+  let trocado = {};
+  let ocupado = false;
+
+  function bloco(id, html){
+    el(id).innerHTML = html;
+  }
+
+  function blocoErro(id, erro){
+    bloco(id, '<div class="erro">' + esc(erro && erro.message ? erro.message : erro) + '</div>');
+  }
+
+  async function carregarHoje(dia){
+    const caixa = await api('/api/caixa');                        // setor: dinheiro
+    bloco('caixaMoedas', htmlMoedas(caixa));
+    el('caixaDia').textContent = dataLonga(caixa && caixa.dia ? caixa.dia : dia);
+    const pagamentos = await api('/api/pagamentos?de=' + dia + '&ate=' + dia);
+    bloco('recebidoDia', htmlRecebido(pagamentos, (caixa && caixa.cotacao) || {}));
+  }
+
+  async function carregarAgenda(dia){
+    const agenda = await api('/api/agenda?data=' + dia);          // setor: prontuario
+    el('agendaQtd').textContent = agenda.length
+      ? agenda.length + (agenda.length === 1 ? ' consulta' : ' consultas') : 'dia livre';
+    bloco('agendaLista', htmlAgenda(agenda));
+  }
+
+  /* Ficha por ficha: é o /api/pacientes/<id> que diz o saldo por moeda. Vai de
+     poucas em poucas para não abrir 200 conexões num consultório grande. */
+  async function carregarPendencias(){
+    const pacientes = await api('/api/pacientes');
+    const fichas = [];
+    for(let i = 0; i < pacientes.length; i += LIMITE_PARALELO){
+      const leva = pacientes.slice(i, i + LIMITE_PARALELO);
+      const resumos = await Promise.all(leva.map(p => api('/api/pacientes/' + p.id)
+        .catch(() => null)));
+      resumos.forEach((resumo, k) => {
+        const pendentes = pendentesDoResumo(resumo);
+        if(pendentes.length){
+          fichas.push({nome: (resumo && resumo.nome) || leva[k].nome,
+                       tel: (resumo && resumo.tel) || leva[k].tel, pendentes: pendentes});
+        }
+      });
+    }
+    el('pendQtd').textContent = fichas.length ? fichas.length + ' em aberto' : 'nada em aberto';
+    bloco('pendLista', htmlPendencias(fichas));
+    const badge = el('badgePend');
+    badge.textContent = String(fichas.length);
+    badge.classList.toggle('some', !fichas.length);
+  }
+
+  async function carregarConversas(){
+    const [conversas, pacientes] = await Promise.all([
+      api('/api/conversas'),                                       // setor: atendimento
+      api('/api/pacientes').catch(() => []),                       // o telefone do "Responder"
+    ]);
+    const telefones = {};
+    (pacientes || []).forEach(p => { telefones[p.id] = p.tel; });
+    const fila = aguardandoHumano(conversas, LIMITE_CONVERSAS)
+      .map(c => Object.assign({}, c, {tel: telefones[c.paciente_id] || ''}));
+    el('convQtd').textContent = fila.length ? fila.length + ' esperando' : 'fila vazia';
+    bloco('convLista', htmlConversas(fila));
+    const badge = el('badgeConv');
+    badge.textContent = String(fila.length);
+    badge.classList.toggle('some', !fila.length);
+  }
+
+  async function carregarLicenca(){
+    try{
+      mostrarLicenca(await api('/api/licenca', {semToken:true}));
+    }catch(_){ mostrarLicenca(null); }
+  }
+
+  async function carregar(tela){
+    if(!token() || ocupado) return;
+    ocupado = true;
+    el('btnAtualizar').disabled = true;
+    el('btnAtualizar').textContent = 'Atualizando…';
+    const dia = isoDia(0);
+    try{
+      await carregarLicenca();
+      if(tela === 'pendencias'){
+        try{ await carregarPendencias(); }catch(erro){ blocoErro('pendLista', erro); }
+      }else if(tela === 'conversas'){
+        try{ await carregarConversas(); }catch(erro){ blocoErro('convLista', erro); }
+      }else{
+        try{ await carregarHoje(dia); }catch(erro){ blocoErro('caixaMoedas', erro); bloco('recebidoDia',''); }
+        try{ await carregarAgenda(dia); }catch(erro){ blocoErro('agendaLista', erro); }
+      }
+      trocado[tela || 'hoje'] = true;
+    }catch(erro){
+      if(erro && erro.rede) avisoRede('Sem conexão com o servidor da clínica.');
+    }finally{
+      ocupado = false;
+      el('btnAtualizar').disabled = false;
+      el('btnAtualizar').textContent = 'Atualizar';
+    }
+  }
+
+  /* ============================================================
+     LIGAÇÕES
+     ============================================================ */
+  el('formLogin').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const login = el('loginUser').value.trim();
+    const senha = el('loginSenha').value;
+    if(!login || !senha){ el('loginAviso').textContent = 'Preencha usuário e senha.'; return; }
+    el('btnLogin').disabled = true;
+    el('btnLogin').textContent = 'Entrando…';
+    try{
+      const dados = await api('/api/login', {metodo:'POST', semToken:true, corpo:{login:login, senha:senha}});
+      guardarToken(dados.token, dados.usuario || login);
+      trocado = {};
+      entrarNaTela(dados.usuario || login);
+      await carregar('hoje');
+    }catch(erro){
+      el('loginAviso').textContent = erro && erro.message ? erro.message : 'não deu para entrar';
+      el('btnLogin').disabled = false;
+      el('btnLogin').textContent = 'Entrar';
+    }
+  });
+
+  el('btnAtualizar').addEventListener('click', () => {
+    const ativa = document.querySelector('.tela.ativa');
+    const nome = ativa ? ativa.id.replace('tela-','') : 'hoje';
+    trocado[nome] = false;
+    carregar(nome);
+  });
+
+  el('btnSair').addEventListener('click', async () => {
+    try{ await api('/api/logout', {metodo:'POST'}); }catch(_){ }
+    pedirLogin('');
+  });
+
+  document.querySelectorAll('#abas button').forEach(b => {
+    b.addEventListener('click', () => trocarTela(b.dataset.tela));
+  });
+
+  // volta do bolso: se ficou mais de um minuto fora, atualiza o que está na tela
+  let escondidoEm = 0;
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){ escondidoEm = Date.now(); return; }
+    if(token() && escondidoEm && Date.now() - escondidoEm > 60000){
+      const ativa = document.querySelector('.tela.ativa');
+      carregar(ativa ? ativa.id.replace('tela-','') : 'hoje');
+    }
+  });
+
+  (async function abrir(){
+    el('topoSub').textContent = dataLonga(isoDia(0));
+    await carregarLicenca().catch(() => {});
+    if(!token()){ pedirLogin(''); return; }
+    entrarNaTela(usuarioDaSessao());
+    await carregar('hoje');
+  })();
+</script>
+</body>
+</html>
