@@ -408,7 +408,7 @@
   .tab.active{color:var(--text);background:var(--card);border-color:var(--border-strong);border-bottom:1px solid var(--card);font-weight:700}
 
   /* ODONTOGRAMA */
-  .teeth{display:flex;flex-wrap:wrap;gap:3px;max-width:520px}
+  .teeth{display:flex;flex-wrap:wrap;gap:3px;max-width:560px}
   .tooth{
     width:30px;height:35px;border:1px solid var(--border);border-radius:6px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -417,6 +417,11 @@
   .tooth:hover{border-color:var(--clinic);background:var(--clinic-soft)}
   .tooth.done{background:var(--accent-solid);color:#fff;border-color:var(--accent-solid)}
   .tooth.todo{background:var(--amber-soft);color:var(--amber-ink);border-color:var(--amber-line)}
+  /* os dois estados que a tela não conhecia (QA BUG-18): em andamento e problema */
+  .tooth.andamento{background:var(--clinic-soft);color:var(--clinic);border-color:var(--clinic)}
+  .tooth.problema{background:var(--red-soft);color:var(--red);border-color:var(--red)}
+  /* quebra entre a arcada de cima (18–28) e a de baixo (48–38): QA BUG-19 */
+  .teeth .quebra-arcada{flex-basis:100%;height:0}
 
   /* EXAMES */
   .radio{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#0b1220}
@@ -1152,9 +1157,9 @@
           </div>
 
           <div class="card" style="margin-bottom:8px">
-            <div class="section-title">Odontograma · <span class="count" id="odontoResumo">2 tratados · 2 a tratar</span></div>
+            <div class="section-title">Odontograma · <span class="count" id="odontoResumo">nenhum dente marcado</span></div>
             <div class="teeth" id="odontoTeeth"></div>
-            <div class="hint">Escuro = já tratado · âmbar = a tratar. Clique no dente para ver o que foi feito.</div>
+            <div class="hint">Escuro = já tratado · âmbar = a tratar · azul = em andamento · vermelho = problema. Clique no dente gira pelos quatro estados e salva na ficha.</div>
           </div>
 
           <div class="tabs" role="tablist" aria-label="Seções da ficha do paciente">
@@ -1622,7 +1627,7 @@
             <div class="gtitle">Robô no WhatsApp — o que fica gravado no servidor</div>
             <div class="config-row"><div><div class="lbl">Modo do robô</div><div class="desc">Automático responde sozinho; desligado fica calado</div></div><div class="ctl"><label class="sr-only" for="cfgModo">Modo do robô</label><select id="cfgModo"><option value="auto">Automático (fluxo + IA)</option><option value="desligado">Desligado</option></select></div></div>
             <div class="config-row"><div><div class="lbl">Horário comercial</div><div class="desc">Início e fim do atendimento do robô</div></div><div class="ctl" style="display:flex;gap:6px"><label class="sr-only" for="cfgInicio">Início do horário comercial</label><input type="time" id="cfgInicio" value="08:00"><label class="sr-only" for="cfgFim">Fim do horário comercial</label><input type="time" id="cfgFim" value="18:00"></div></div>
-            <div class="config-row"><div><div class="lbl">Mensagem de boas-vindas</div><div class="desc">Primeira resposta ao novo contato</div></div><div class="ctl" style="display:flex;gap:6px;align-items:center"><label class="sr-only" for="cfgBoasVindas">Mensagem de boas-vindas</label><input type="text" id="cfgBoasVindas" value=""></div></div>
+            <div class="config-row"><div><div class="lbl">Mensagem de boas-vindas</div><div class="desc">Primeira resposta ao novo contato</div></div><div class="ctl" style="display:flex;gap:6px;align-items:center"><label class="sr-only" for="cfgBoasVindas">Mensagem de boas-vindas</label><input type="text" id="cfgBoasVindas" maxlength="500" value=""></div></div>
           </div>
 
           <div class="actions" style="justify-content:flex-start;margin-top:7px">
@@ -1967,6 +1972,43 @@
     try{ u ? sessionStorage.setItem(USUARIO_KEY, u) : sessionStorage.removeItem(USUARIO_KEY); }catch(_){ }
   }
   function usuarioDaSessao(){ try{ return sessionStorage.getItem(USUARIO_KEY) || ''; }catch(_){ return ''; } }
+  /* ============================================================
+     PAPÉIS (QA BUG-14) — o mesmo recorte do servidor (SETORES em servidor.py):
+     a tela esconde o que o papel não pode fazer e o servidor recusa (403) se
+     alguém tentar por fora. Recepção não vê dinheiro, financeiro não mexe em
+     prontuário, ajuste do robô é de admin/dentista e a folha da equipe é do dono.
+     ============================================================ */
+  const PAPEL_KEY = 'cd-papel';
+  const SETORES_UI = {
+    prontuario: ['admin', 'dentista', 'recepcao'],
+    atendimento: ['admin', 'dentista', 'recepcao'],
+    dinheiro: ['admin', 'financeiro'],
+    equipe: ['admin'],
+    robo: ['admin', 'dentista']
+  };
+  function guardarPapel(p){ try{ p ? sessionStorage.setItem(PAPEL_KEY, p) : sessionStorage.removeItem(PAPEL_KEY); }catch(_){ } }
+  function papelAtual(){
+    if(usuarioLogado && usuarioLogado.papel) return usuarioLogado.papel;
+    try{ return sessionStorage.getItem(PAPEL_KEY) || 'recepcao'; }catch(_){ return 'recepcao'; }
+  }
+  function podeSetor(setor){ return (SETORES_UI[setor] || []).includes(papelAtual()); }
+  function aplicarPapeisNaTela(){
+    const telas = {dinheiro: 'dinheiro', equipe: 'equipe'};
+    Object.keys(telas).forEach(tela=>{
+      const b = document.querySelector('.nav button[data-screen="' + tela + '"]');
+      if(b) b.hidden = !podeSetor(telas[tela]);
+    });
+    const cfg = document.getElementById('btnBotConfig');
+    if(cfg) cfg.hidden = !podeSetor('robo');            // ajustes do robô: admin/dentista
+    ['btnReceber', 'btnReceberFicha', 'btnReceberOrc', 'btnNovoLancamento', 'btnNovoOrcamento'].forEach(id=>{
+      const b = document.getElementById(id);
+      if(b) b.hidden = !podeSetor('dinheiro');          // receber/orçamento é do financeiro
+    });
+    ['btnNovaEvolucao', 'btnNovaEvolucao2'].forEach(id=>{
+      const b = document.getElementById(id);
+      if(b) b.hidden = !podeSetor('prontuario');        // financeiro não edita prontuário
+    });
+  }
   function esc(txt){
     return String(txt == null ? '' : txt).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -1992,6 +2034,7 @@
   }
   function voltarParaLogin(){
     guardarToken(''); guardarUsuario('');
+    guardarPapel('');                        // o papel do usuário sai junto com a sessão
     usuarioLogado = null;
     const botao = document.getElementById('btnLogin');
     if(botao) botao.disabled = !licencaAtiva;
@@ -2192,6 +2235,14 @@
   function go(screen){
     const legado = {prontuario:'pacientes', orcamento:'dinheiro', financeiro:'dinheiro', radiografias:'pacientes', novasconsultas:'robo', novas:'robo', feedbacks:'whatsapp'};
     screen = legado[screen] || screen;
+    /* QA BUG-14: com o menu inteiro à mão, qualquer papel entrava em qualquer tela.
+       A tela esconde o que não é do papel e aqui recusa com recado claro. */
+    const setorDaTela = {dinheiro:'dinheiro', equipe:'equipe', funcionario:'equipe'};
+    if(setorDaTela[screen] && !podeSetor(setorDaTela[screen])){
+      toast('Seu papel (' + papelAtual() + ') não tem acesso a ' + (titles[screen] || screen)
+        + ' — isso é do setor ' + setorDaTela[screen]);
+      screen = 'agenda';
+    }
     screens.forEach(s=>{
       document.getElementById('screen-'+s).classList.toggle('active', s===screen);
     });
@@ -2354,21 +2405,14 @@
   }
   document.getElementById('relCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalRelatorio')));
   document.getElementById('modalRelatorio').addEventListener('click', e=>{ if(e.target===document.getElementById('modalRelatorio')) fecharModal(document.getElementById('modalRelatorio')); });
-  const evolucoesSeed = [
-    {off:-3, esp:'odonto', servico:'Limpeza + profilaxia', prof:'Dra. Mariana', valor:'R$ 250,00', dentes:'Todos (14–24 e 34–44)', materiais:'Pasta profilática, flúor gel',
-     desc:'Remoção de cálculo supragengival, profilaxia com pasta e aplicação tópica de flúor. Paciente sem sensibilidade.',
-     obs:'Retorno para manutenção em 6 meses.', anexos:[['exame','1 radiografia'],['camera','2 fotos']]},
-    {off:-9, esp:'odonto', servico:'Restauração dente 26', prof:'Dr. Carlos', valor:'R$ 400,00', dentes:'26 (oclusal)', materiais:'Resina composta, anestesia local',
-     desc:'Remoção de cárie, isolamento, aplicação de resina em camadas e fotopolimerização. Ajuste oclusal.',
-     obs:'Paciente orientado a evitar alimentos duros por 24h.', anexos:[['exame','1 periapical']]},
-    {off:-21, esp:'odonto', servico:'Avaliação inicial', prof:'Dr. Carlos', valor:'R$ 150,00', dentes:'Avaliação completa', materiais:'—',
-     desc:'Exame clínico geral, radiografia panorâmica e montagem do plano de tratamento.',
-     obs:'Necessário restauração no 26 e limpeza. Orçamento enviado.', anexos:[['exame','1 panorâmica']]}
-  ];
+  /* As evoluções de exemplo que ficavam aqui saíram (QA BUG-20): a ficha mostra o que
+     está no banco — e quando não há nada, mostra que não há nada. */
+
   function evolucoesDoPaciente(){
     const reais = evolucoesPorPaciente[pacienteAtual];
-    if(!reais || !reais.length) return evolucoesSeed;   // banco ainda sem evolução: mantém o exemplo da tela
-    return reais.map(e=>({
+    /* QA BUG-20: ficha sem evolução mostrava 3 atendimentos de exemplo (datas relativas
+       de mentira) como se fossem do paciente. Vazio de verdade é vazio. */
+    return (reais || []).map(e=>({
       data: String(e.data || '').slice(0,10).split('-').reverse().join('/'),
       esp:'odonto',
       servico: e.procedimento || 'Atendimento',
@@ -2384,7 +2428,13 @@
   function renderEvolucoes(){
     const tb = document.getElementById('evoTbody');
     tb.innerHTML = '';
-    evolucoesDoPaciente().forEach((e,i)=>{
+    const lista = evolucoesDoPaciente();
+    if(!lista.length){
+      /* QA BUG-20: nada de evolução inventada — a ficha diz que está vazia. */
+      tb.innerHTML = '<tr class="evo-vazia"><td colspan="5">Nenhuma evolução registrada nesta ficha. O que aparece aqui vem do banco: use “Nova evolução” para escrever o primeiro atendimento.</td></tr>';
+      return;
+    }
+    lista.forEach((e,i)=>{
       const id = 'evo' + (i+1);
       const data = e.data || dma(e.off);
       const row = document.createElement('tr');
@@ -2420,12 +2470,19 @@
   renderEvolucoes();
 
   /* ficha: odontograma, histórico financeiro e conversas */
-  const dentesFDI = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
-  const historicoFin = [
-    {dia:-3, desc:'Limpeza + profilaxia', forma:'Pix', valor:250},
-    {dia:-9, desc:'Restauração dente 26', forma:'Pix', valor:400},
-    {dia:-21, desc:'Avaliação inicial', forma:'Cartão', valor:150}
-  ];
+  /* As 32 peças do FDI: arcada de cima 18→11 e 21→28, arcada de baixo 48→41 e 31→38.
+     QA BUG-19: só existiam as 16 de cima — a clínica não tinha onde marcar o molar de baixo. */
+  const dentesFDI = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28,
+                     48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
+  /* Os quatro estados que a API aceita em POST /api/pacientes/<id>/dentes — a mesma lista
+     de servidor.py (ESTADOS_DENTE). QA BUG-18: a tela só desenhava todo/done e o clique
+     passava só por dois deles, então o estado gravado voltava invisível. */
+  const ESTADOS_DENTE = ['todo', 'done', 'em_andamento', 'problema'];
+  const ROTULO_DENTE = {todo:'a tratar', done:'tratado', em_andamento:'em andamento', problema:'problema'};
+  const CLASSE_DENTE = {todo:'todo', done:'done', em_andamento:'andamento', problema:'problema'};
+  /* Os exemplos de evolução e de recebimento que existiam aqui saíram (QA BUG-20): a
+     ficha mostra o que está no banco e, quando não há nada, diz que não há nada. */
+
   function emReais(valor, moeda){
     const v = Number(valor)||0;
     if(moeda === 'USD') return v * cotacao.usdBRL;
@@ -2441,14 +2498,20 @@
     const p = patients[nome] || {};
     const mapa = p.dentes || {};
     const el = document.getElementById('odontoTeeth');
-    el.innerHTML = dentesFDI.map(d=>{
-      const cls = mapa[d] === 'done' ? ' done' : mapa[d] === 'todo' ? ' todo' : '';
-      const est = mapa[d] === 'done' ? ' — tratado' : mapa[d] === 'todo' ? ' — a tratar' : '';
-      return '<button type="button" class="tooth' + cls + '" data-dente="' + d + '" aria-label="Dente ' + d + est + '">' + d + '</button>';
+    el.innerHTML = dentesFDI.map((d, i)=>{
+      const estado = mapa[d];
+      const cls = CLASSE_DENTE[estado];                 // todo/done/em_andamento/problema
+      const est = ROTULO_DENTE[estado] ? ' — ' + ROTULO_DENTE[estado] : '';
+      const quebra = (i === 16) ? '<span class="quebra-arcada" aria-hidden="true"></span>' : '';
+      return quebra + '<button type="button" class="tooth' + (cls ? ' ' + cls : '') + '" data-dente="' + d
+        + '" data-estado="' + (estado || '') + '" aria-label="Dente ' + d + est + '">' + d + '</button>';
     }).join('');
-    const done = Object.keys(mapa).filter(k=>mapa[k] === 'done').length;
-    const todo = Object.keys(mapa).filter(k=>mapa[k] === 'todo').length;
-    document.getElementById('odontoResumo').textContent = done + ' tratado(s) · ' + todo + ' a tratar';
+    const contagem = ESTADOS_DENTE
+      .map(e=>({rotulo: ROTULO_DENTE[e], n: Object.keys(mapa).filter(k=>mapa[k] === e).length}))
+      .filter(c=>c.n > 0);
+    document.getElementById('odontoResumo').textContent = contagem.length
+      ? contagem.map(c=>c.n + ' ' + c.rotulo).join(' · ')
+      : 'nenhum dente marcado';
   }
   document.getElementById('odontoTeeth').addEventListener('click', async e=>{
     const b = e.target.closest('[data-dente]');
@@ -2457,7 +2520,9 @@
     const p = patients[pacienteAtual] || {};
     const mapa = p.dentes || (p.dentes = {});
     const anterior = mapa[d];
-    const novo = anterior === 'done' ? 'todo' : 'done';   // clique alterna tratado / a tratar
+    /* o clique gira pelos quatro estados da API (QA BUG-18); dente novo entra como 'done' */
+    const posicao = ESTADOS_DENTE.indexOf(anterior);
+    const novo = posicao < 0 ? 'done' : ESTADOS_DENTE[(posicao + 1) % ESTADOS_DENTE.length];
     if(!p.id){
       toast('Dente ' + d + ' — abra a ficha de um paciente antes de marcar.');
       return;
@@ -2467,7 +2532,7 @@
       await api('/api/pacientes/' + p.id + '/dentes', {metodo:'POST', corpo:{dente:String(d), estado:novo}});
       mapa[d] = novo;
       renderOdontograma(pacienteAtual);
-      toast('Dente ' + d + ' — ' + (novo === 'done' ? 'tratado' : 'a tratar') + ' (salvo na ficha)');
+      toast('Dente ' + d + ' — ' + ROTULO_DENTE[novo] + ' (salvo na ficha)');
     }catch(erro){
       if(anterior === undefined) delete mapa[d]; else mapa[d] = anterior;
       avisar(erro);
@@ -2487,10 +2552,9 @@
       }).join('');
       return;
     }
-    tb.innerHTML = historicoFin.map(x=>{
-      const valor = moeda === 'BRL' ? x.valor : deReais(x.valor, moeda);
-      return '<tr><td>' + dma(x.dia) + '</td><td>' + x.desc + '</td><td>' + x.forma + '</td><td class="mono"><span class="pill">' + fmtMoeda(valor, moeda) + '</span></td><td><span class="quit" style="font-weight:600">Pago</span></td></tr>';
-    }).join('');
+    /* QA BUG-20: sem recebimento no banco a ficha mostrava três recebimentos de exemplo
+       (Pix/cartão) que nunca entraram no caixa. Agora diz que está vazio. */
+    tb.innerHTML = '<tr class="fin-vazia"><td colspan="5">Nenhum recebimento registrado para este paciente. Os valores aparecem aqui depois do primeiro “Receber”.</td></tr>';
   }
   /* Conversas: uma fonte só — GET /api/conversas. A API devolve tudo (todos os
      pacientes, mais novo primeiro); quem separa por paciente é a tela. */
@@ -2635,6 +2699,7 @@
   const ncServico = document.getElementById('ncServico');
   const ncLocal = document.getElementById('ncLocal');
   let ncRemarcando = null;
+  let ncFilaOrigem = null;      // índice na fila do robô quando o 'Corrigir' veio de lá (QA BUG-12)
 
   function preencherNC(){
     preencher(ncServico, catalogo[ncArea.value].servicos);
@@ -2682,6 +2747,7 @@
     opcoes = opcoes || {};
     preencherNC();
     ncRemarcando = opcoes.remarcar || null;
+    ncFilaOrigem = (opcoes.fila === undefined || opcoes.fila === null) ? null : opcoes.fila;
     document.getElementById('ncTitulo').textContent = ncRemarcando ? 'Remarcar consulta' : 'Nova consulta';
     document.getElementById('ncOk').textContent = ncRemarcando ? 'Salvar novo horário' : 'Agendar';
     document.getElementById('ncBuscaPaciente').value = '';
@@ -2714,6 +2780,7 @@
     const hora = document.getElementById('ncHora').value || '--:--';
     const diaOff = diasAte(dataEscolhida);
     const servico = ncServico.value || 'Consulta';
+    let avisoFicha = '';                    // o aviso do cadastro sobrevive até o toast final
 
     if(novaFicha && !patients[nome]){
       const tel = document.getElementById('ncNovoTel').value.trim();
@@ -2728,7 +2795,11 @@
           dentes:{}, cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : '',
           comoConheceu:'', info:'Ficha nova · ' + (tel || 'telefone a confirmar')};
         await carregarPacientes();          // a lista volta do banco — nada de ficha-fantasma
-        toast('Ficha criada para ' + nome + ' (salva no banco)');
+        /* QA BUG-16: telefone estranho ou já usado por outra ficha não bloqueia o balcão,
+           mas a recepção precisa saber (o robô casa o contato pelo telefone). O aviso vai
+           no toast FINAL: o toast é um elemento só e o do agendamento viria por cima. */
+        avisoFicha = novo.aviso ? ' — ATENÇÃO: ' + novo.aviso : '';
+        toast('Ficha criada para ' + nome + ' (salva no banco)' + avisoFicha);
       }catch(erro){
         avisar(erro);                       // 401/429/503 do backend aparecem pro usuário
         return;
@@ -2740,11 +2811,21 @@
       ncRemarcando.dia = diaOff;
       ncRemarcando.proc = servico;
       ncRemarcando.status = 'confirmado';
-      toast('Consulta de ' + nome + ' remarcada para ' + dma(diaOff) + ' às ' + hora);
+      if(ncFilaOrigem !== null){
+        /* QA BUG-12: 'Corrigir' na fila do robô criava uma consulta nova e deixava a
+           antiga na fila (duas consultas para a mesma pessoa). Agora a consulta sai da
+           fila e entra na agenda uma única vez. */
+        agendamentos.push({nome:nome, proc:servico, hora:hora, dia:diaOff, status:'confirmado'});
+        const pos = novasConsultas.indexOf(ncRemarcando);
+        if(pos >= 0) novasConsultas.splice(pos, 1);
+        ncFilaOrigem = null;
+        renderNovas();
+      }
+      toast('Consulta de ' + nome + ' remarcada para ' + dma(diaOff) + ' às ' + hora + avisoFicha);
       ncRemarcando = null;
     } else {
       agendamentos.push({nome:nome, proc:servico, hora:hora, dia:diaOff, status:'aguardando'});
-      toast('Consulta agendada: ' + nome + ' em ' + dma(diaOff) + ' às ' + hora);
+      toast('Consulta agendada: ' + nome + ' em ' + dma(diaOff) + ' às ' + hora + avisoFicha);
     }
     fecharModal(modalConsulta);
     diaAtual = diaOff;
@@ -2915,14 +2996,19 @@
   });
 
   document.getElementById('fSave').addEventListener('click', ()=>{
-    if(funcAtual && !funcAtual.admin){
+    if(!funcAtual){ toast('Escolha um funcionário na lista do Time antes de salvar'); return; }
+    /* QA BUG-06: no ADMIN o formulário é read-only e o toast dizia "salvo" sem salvar
+       nada. Agora o que a tela deixa editar (cargo, escala, salário, status) é salvo
+       para todo mundo — admin inclusive — e o toast só sai depois de salvar. */
+    if(!funcAtual.admin){
       funcAtual.privs = [...document.querySelectorAll('#fPrivs input:checked')].map(c=>c.value);
       funcAtual.cargo = document.getElementById('fCargo').value;
-      funcAtual.escala = document.getElementById('fEscala').value;
-      funcAtual.salario = document.getElementById('fSalario').value;
-      funcAtual.status = document.getElementById('fStatus').value;
-      renderFunc();
     }
+    funcAtual.escala = document.getElementById('fEscala').value;
+    funcAtual.salario = document.getElementById('fSalario').value;
+    funcAtual.status = document.getElementById('fStatus').value;
+    renderFunc();
+    document.getElementById('fCargoLabel').textContent = funcAtual.cargo + (funcAtual.admin ? ' · acesso total' : '');
     toast('Alterações salvas para ' + funcAtual.nome);
   });
 
@@ -3011,10 +3097,15 @@
       const d = parseData(dataStr);
       if(f.from){ const from = new Date(f.from+'T00:00'); if(d < from) return false; }
       if(f.to){ const to = new Date(f.to+'T00:00'); if(d > to) return false; }
-    } else if(f.period === 30 || f.period === 60 || f.period === 90){
-      const d = parseData(dataStr);
-      const limite = new Date(HOJE); limite.setDate(limite.getDate() - f.period);
-      if(d < limite || d > HOJE) return false;
+    } else {
+      /* QA BUG-05: o data-period chega como texto ('30'/'60'/'90') e a comparação era
+         com número (=== 30), então nenhum período filtrava nada. Number() resolve. */
+      const dias = Number(f.period);
+      if(dias === 30 || dias === 60 || dias === 90){
+        const d = parseData(dataStr);
+        const limite = new Date(HOJE); limite.setDate(limite.getDate() - dias);
+        if(d < limite || d > HOJE) return false;
+      }
     }
     return true;
   }
@@ -3080,20 +3171,30 @@
   document.getElementById('pCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalPag')));
   document.getElementById('modalPag').addEventListener('click', e=>{ if(e.target===document.getElementById('modalPag')) fecharModal(document.getElementById('modalPag')); });
   document.getElementById('pAdd').addEventListener('click', ()=>{
-    const mes = document.getElementById('pMes').value.trim() || 'Out/2026';
-    const pago = parseValor(document.getElementById('pValor').value);
+    /* QA BUG-07: aceitava mês vazio (caía num 'Out/2026' inventado), lixo e valor
+       negativo — o histórico do Time registrava pagamento que não existiu. */
+    if(!pagAtual){ toast('Abra a ficha do funcionário na lista do Time antes de registrar o pagamento'); return; }
+    const mes = document.getElementById('pMes').value.trim();
+    const bruto = document.getElementById('pValor').value.trim();
+    const pago = parseValor(bruto);
+    if(!mes){ toast('Informe o mês do pagamento (ex.: Out/2026)'); document.getElementById('pMes').focus(); return; }
+    if(!bruto || !(pago > 0)){ toast('Informe um valor de pagamento maior que zero (ex.: 2.500,00)'); document.getElementById('pValor').focus(); return; }
     pagAtual.pagamentos.push({mes, pago, quando: agora()});
     renderPag();
     document.getElementById('pMes').value = '';
     document.getElementById('pValor').value = '';
-    toast('Pagamento registrado: ' + mes);
+    toast('Pagamento registrado: ' + mes + ' — R$ ' + pago.toLocaleString('pt-BR'));
   });
 
   document.getElementById('pSave').addEventListener('click', ()=>{
+    if(!pagAtual){ toast('Abra a ficha do funcionário na lista do Time antes de quitar'); return; }
     const quando = agora();
     let adicionou = false;
+    let invalidos = 0;
     document.querySelectorAll('.quitar-input').forEach(inp=>{
-      const v = parseValor(inp.value);
+      const bruto = String(inp.value || '').trim();
+      const v = parseValor(bruto);
+      if(bruto && !(v > 0)){ invalidos++; return; }     // QA BUG-07: lixo/negativo não vira quitação
       if(v > 0){
         pagAtual.quitacoes = pagAtual.quitacoes || [];
         pagAtual.quitacoes.push({mes: inp.dataset.mes, valor: v, quando});
@@ -3101,7 +3202,9 @@
       }
     });
     renderPag();
-    toast(adicionou ? 'Quitação salva — pendente abatido' : 'Nenhum valor informado');
+    if(adicionou) toast('Quitação salva — pendente abatido');
+    else if(invalidos) toast('Valor inválido: a quitação precisa ser um número maior que zero (ex.: 500,00)');
+    else toast('Nenhum valor informado');
   });
 
   // ===== Filtros e relatórios (ponto + pagamentos) =====
@@ -3372,6 +3475,8 @@
       guardarToken(sessao.token);
       guardarUsuario(sessao.usuario || login);
       usuarioLogado = {nome: sessao.usuario || login, papel: sessao.papel || 'recepcao'};
+      guardarPapel(usuarioLogado.papel);        // QA BUG-14: o papel volta no reload da aba
+      aplicarPapeisNaTela();
       try{ localStorage.setItem('cd-ultimo-usuario', login); }catch(_){ }
       document.getElementById('loginSenha').value = '';
       const aviso = document.getElementById('loginAviso');
@@ -3383,9 +3488,9 @@
       document.getElementById('loginOverlay').classList.remove('open');
       toast('Bom dia, ' + usuarioLogado.nome + '! Ponto de entrada: ' + horaAgora());
       renderPontoHoje();
-      await carregarLancamentos();             // tela Dinheiro: extrato do banco (BUG-04)
-      await carregarCaixa();                   // caixa por moeda, hoje e total
-      carregarPainelRobo();                    // painel do robô já vem com dados do banco
+      if(podeSetor('dinheiro')){ await carregarLancamentos(); }   // Dinheiro: extrato do banco
+      if(podeSetor('dinheiro')){ await carregarCaixa(); }         // caixa por moeda
+      if(podeSetor('atendimento')) carregarPainelRobo();          // painel do robô com dados do banco
     }catch(erro){
       toast(erro && erro.rede ? 'Sem conexão com o servidor local — não deu para entrar'
                               : ((erro && erro.message) || 'Não deu para entrar'));
@@ -3477,7 +3582,9 @@
       renderAgenda();
       renderProximas();
     } else if(btn.dataset.acao === 'reagendar'){
-      abrirNovaConsulta({paciente:c.nome, hora:c.hora, dia:c.dia});
+      /* QA BUG-12: o 'Corrigir' abre o formulário em modo remarcação apontando para o
+         item da fila (fila:i) — sem isso o salvar criava uma consulta nova. */
+      abrirNovaConsulta({paciente:c.nome, hora:c.hora, dia:c.dia, remarcar:c, fila:i});
       return;
     } else {
       toast('Consulta de ' + c.nome + ' cancelada');
@@ -3661,13 +3768,39 @@
     });
   }
 
+  /* A conversa que o painel mostra é a do banco (GET /api/conversas). QA BUG-13: o painel
+     dizia "mensagem enviada" e continuava exibindo as 4 mensagens de exemplo — a mensagem
+     que a secretária mandou não aparecia na conversa. */
+  function conversaDoPacienteNoBanco(nome){
+    const id = idDoPaciente(nome);
+    if(!id) return [];
+    return emOrdemDeConversa(conversasApi.filter(c => c.paciente_id === id))
+      .map(c => ({dir: c.direcao === 'recebida' ? 'in' : 'out', t: c.texto, h: quandoConversa(c.data)}));
+  }
+
+  function bolhasPainel(msgs){
+    return msgs.map(m=>`<div class="wa-msg ${m.dir}">${esc(m.t)}<span class="t">${esc(m.h)}</span></div>`).join('');
+  }
+
   function renderWaBody(){
     const el = document.getElementById('waBody');
-    const chat = waChats[waAtual];
+    const real = conversaDoPacienteNoBanco(waAtual);
+    const chat = waChats[waAtual] || {msgs:[], idioma:'PT'};
     document.getElementById('waHeadName').textContent = waAtual;
     document.getElementById('waHeadAv').textContent = waAtual.charAt(0);
-    document.getElementById('waHeadStatus').textContent = 'online · ' + (chat.idioma === 'ES' ? 'espanhol' : 'português');
-    el.innerHTML = chat.msgs.map(m=>`<div class="wa-msg ${m.dir}">${m.t}<span class="t">${m.h}</span></div>`).join('');
+    if(real.length){
+      document.getElementById('waHeadStatus').textContent = 'conversa da clínica · ' + real.length + ' mensagem(ns) no banco';
+      el.innerHTML = bolhasPainel(real);
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+    /* sem mensagem no banco o chat de exemplo só aparece rotulado como exemplo */
+    document.getElementById('waHeadStatus').textContent = chat.msgs.length
+      ? 'exemplo de demonstração · ' + (chat.idioma === 'ES' ? 'espanhol' : 'português')
+      : 'sem conversa registrada';
+    el.innerHTML = chat.msgs.length
+      ? bolhasPainel(chat.msgs) + '<div class="wa-vazia">Exemplo de demonstração — este contato ainda não tem mensagem no banco.</div>'
+      : '<div class="wa-vazia"><b>Nenhuma conversa registrada com ' + esc(waAtual) + '.</b> <br>O robô ainda não trocou mensagem com este paciente — não há histórico para ler aqui.</div>';
     el.scrollTop = el.scrollHeight;
   }
 
@@ -3683,13 +3816,15 @@
   /* Atalho "Ver conversa" da fila do robô: abre o WhatsApp já na conversa do paciente */
   function abrirConversa(nome){
     go('whatsapp');
-    if(waChats[nome]){
+    const noBanco = conversaDoPacienteNoBanco(nome);
+    if(noBanco.length || waChats[nome]){
       waAtual = nome;
       waUnread[nome] = 0;
       renderWaList();
       renderWaBody();
       atualizarWaBadge();
-      toast('Conversa de ' + nome + ' aberta — ' + waChats[nome].msgs.length + ' mensagem(ns) registradas');
+      toast('Conversa de ' + nome + ' aberta — ' + (noBanco.length || waChats[nome].msgs.length)
+        + ' mensagem(ns) ' + (noBanco.length ? 'no banco' : 'de exemplo'));
     } else {
       renderWaSemConversa(nome);
       toast('Nenhuma conversa registrada com ' + nome);
@@ -3744,6 +3879,8 @@
       const r = await api('/api/conversas', {metodo:'POST', corpo:{paciente_id:id, texto:texto}});
       if(input) input.value = '';
       await carregarPainelRobo();
+      renderWaBody();          // QA BUG-13: a mensagem enviada aparece na conversa do painel
+      renderWaList(document.getElementById('waSearch').value);
       if(r && r.enviado) toast('Mensagem enviada pelo WhatsApp para ' + waAtual + '.');
       else toast('Mensagem guardada na ficha de ' + waAtual + ' — não saiu pelo WhatsApp (' + ((r && r.motivo) || 'sem envio') + ').');
     }catch(erro){
@@ -3808,12 +3945,13 @@
     b.setAttribute('aria-expanded', abrir ? 'true' : 'false');
     b.textContent = abrir ? 'Esconder ajustes avançados' : 'Mostrar ajustes avançados (26 interruptores)';
   });
-  document.getElementById('btnBotConfig').addEventListener('click', ()=>{
+  document.getElementById('btnBotConfig').addEventListener('click', async ()=>{
     document.getElementById('botAvancado').hidden = true;
     document.getElementById('btnAvancado').setAttribute('aria-expanded','false');
     document.getElementById('btnAvancado').textContent = 'Mostrar ajustes avançados (26 interruptores)';
-    aplicarPerfil('padrao');
-    carregarConfigBot();                       // GET /api/bot/config: o que está gravado de verdade
+    /* QA BUG-08: antes a tela forçava o perfil 'padrao' e nunca relia o que estava
+       gravado — reabrir mostrava Padrão/25 ligadas mesmo depois de salvar Agressivo. */
+    await carregarConfigBot();                  // GET /api/bot/config: perfil + as 26 automações
     abrirModal(document.getElementById('modalBotConfig'));
   });
   document.getElementById('btnBotCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalBotConfig')));
@@ -3821,14 +3959,32 @@
     const perfil = [...document.querySelectorAll('input[name=botPerfil]')].find(r=>r.checked);
     const ligados = switchesBot().filter(s=>s.checked).length;
     const botao = document.getElementById('btnBotSave');
+    const boas = document.getElementById('cfgBoasVindas');
+    const inicio = (document.getElementById('cfgInicio') || {}).value || '';
+    const fim = (document.getElementById('cfgFim') || {}).value || '';
+    /* QA BUG-09: texto acima do limite era cortado calado no servidor; avisa aqui antes. */
+    if(boas && boas.value.length > 500){
+      toast('A mensagem de boas-vindas tem ' + boas.value.length + ' caracteres e o limite é 500 — encurte e salve de novo');
+      boas.focus();
+      return;
+    }
+    /* QA BUG-10: 18:00→08:00 era aceito e o robô parava de oferecer horário. */
+    if(inicio && fim && inicio >= fim){
+      toast('Horário comercial invertido: abre ' + inicio + ' e fecha ' + fim + ' — o fim precisa ser depois do início');
+      document.getElementById('cfgFim').focus();
+      return;
+    }
     const corpo = {
       modo: (document.getElementById('cfgModo') || {}).value || 'auto',
-      boas_vindas: (document.getElementById('cfgBoasVindas') || {}).value || '',
+      boas_vindas: (boas || {}).value || '',
       horario: {
-        inicio: (document.getElementById('cfgInicio') || {}).value || '',
-        fim: (document.getElementById('cfgFim') || {}).value || '',
+        inicio,
+        fim,
         dias: (configBot && configBot.horario && configBot.horario.dias) || [0, 1, 2, 3, 4]
-      }
+      },
+      /* QA BUG-08: perfil e as 26 automações vão junto — o bot_config.json é a memória. */
+      perfil: perfil ? perfil.value : 'personalizado',
+      automacoes: switchesBot().reduce((mapa, s)=>{ mapa[s.dataset.cfg] = !!s.checked; return mapa; }, {})
     };
     botao.disabled = true;
     try{
@@ -3837,7 +3993,8 @@
       fecharModal(document.getElementById('modalBotConfig'));
       toast('Configurações salvas — robô em modo ' + (corpo.modo === 'desligado' ? 'desligado' : 'automático')
         + ', atendimento das ' + corpo.horario.inicio + ' às ' + corpo.horario.fim
-        + (perfil ? ' (' + rotuloPerfil[perfil.value] + ', ' + ligados + ' automações ligadas)' : ''));
+        + (perfil ? ' (' + rotuloPerfil[perfil.value] + ', ' + ligados + ' automações ligadas)' : '')
+        + (corpo.boas_vindas ? '' : ' — sem mensagem de boas-vindas, o robô só responde'));
     }catch(erro){
       avisar(erro);                            // 503 de licença e 400 de campo torto caem aqui
     }finally{
@@ -3865,6 +4022,14 @@
     const fim = document.getElementById('cfgFim');
     if(inicio && horario.inicio) inicio.value = horario.inicio;
     if(fim && horario.fim) fim.value = horario.fim;
+    /* QA BUG-08: o perfil e os 26 interruptores voltam do arquivo — abrir de novo mostra
+       o que foi salvo (Agressivo continua Agressivo), não o padrão da tela. */
+    if(configBot.automacoes){
+      switchesBot().forEach(s=>{
+        if(configBot.automacoes[s.dataset.cfg] !== undefined) s.checked = !!configBot.automacoes[s.dataset.cfg];
+      });
+    }
+    marcarPerfil((configBot.perfil && perfisBot[configBot.perfil]) ? configBot.perfil : null);
     return configBot;
   }
 
@@ -3924,6 +4089,7 @@
     }
     renderHumano();
     renderUltimasConversas();
+    renderWaBody();              // a conversa aberta passa a ser lida do banco (QA BUG-13)
   }
 
   document.getElementById('humanoList').addEventListener('click', async e=>{
@@ -4165,6 +4331,7 @@
   aplicarTema(temaEscuro(), false);
 
   preencherLogin();
+  aplicarPapeisNaTela();       // QA BUG-14: o menu já abre recortado pelo papel da sessão
   atualizarCotacao();
   renderAgenda();
   renderAlertas();
@@ -4183,8 +4350,11 @@
     await carregarPacientes();
     const nome = patients[pacienteAtual] ? pacienteAtual : (pacientesLista[0] && pacientesLista[0].nome);
     if(nome) await openPatient(nome, 'resumo');
-    await carregarLancamentos();       // tela Dinheiro: extrato e caixa do banco (BUG-04)
-    await carregarCaixa();
+    if(podeSetor('dinheiro')){
+      await carregarLancamentos();   // tela Dinheiro: extrato e caixa do banco (BUG-04)
+      await carregarCaixa();
+    }
+    if(podeSetor('atendimento')) carregarPainelRobo();
     renderPontoHoje();
     document.getElementById('loginOverlay').classList.remove('open');
     document.getElementById('topAvatar').textContent = (usuarioDaSessao() || 'U').charAt(0).toUpperCase();
@@ -4342,9 +4512,28 @@
   /* ferramentas fixas da barra: imprimir e recarregar os dados deste PC */
   document.getElementById('btnImprimirTopo')?.addEventListener('click', ()=>window.print());
   document.getElementById('btnAtualizarTopo')?.addEventListener('click', async ()=>{
-    renderAgenda(); renderProximas(); renderAlertas(); renderNovas(); renderSaldos();
-    await carregarLancamentos(); await carregarCaixa(); renderPontoHoje();
-    toast('Dados do dia recarregados deste PC');
+    /* QA BUG-11: o botão só redizia as listas na memória e dizia "recarregado" mesmo
+       sem servidor. Agora ele fala com a API e, se a rede estiver fora, quem avisa é
+       o aviso de rede (api() acende a faixa no topo) — nada de toast mentiroso. */
+    const botao = document.getElementById('btnAtualizarTopo');
+    if(botao) botao.disabled = true;
+    try{
+      await carregarPacientes();
+      if(podeSetor('dinheiro')){
+        await carregarLancamentos();
+        await carregarCaixa();
+      }
+      const id = pacienteAtual ? idDoPaciente(pacienteAtual) : null;
+      if(id) await carregarFicha(id);
+      renderAgenda(); renderProximas(); renderAlertas(); renderNovas(); renderSaldos();
+      renderPontoHoje();
+      if(pacienteAtual){ renderOrcPacientes(); renderOrcDetalhe(pacienteAtual); atualizarSaldoFicha(pacienteAtual); }
+      toast('Dados do dia recarregados do servidor');
+    }catch(erro){
+      avisar(erro);          // erro.rede = "Sem conexão com o servidor — a ação não foi salva"
+    }finally{
+      if(botao) botao.disabled = false;
+    }
   });
 
   /* relógio da faixa de título */
