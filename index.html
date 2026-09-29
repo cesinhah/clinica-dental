@@ -27,6 +27,29 @@
     --red:#b91c1c;     /* pendente */
     --accent:var(--clinic);
     --accent-soft:var(--clinic-soft);
+    /* superfícies de apoio e estados — um valor por tema (ver html[data-tema="escuro"]) */
+    --accent-solid:var(--clinic);
+    --border-strong:#cbd5e1;
+    --border-soft:#eef2f7;
+    --scroll:#cbd5e1;
+    --scroll-hover:#94a3b8;
+    --shadow-card:0 1px 2px rgba(15,23,42,.04);
+    --shadow-modal:0 22px 50px rgba(15,23,42,.3);
+    --veil:rgba(15,23,42,.5);
+    --toast-bg:#0f172a;
+    --amber-soft:#fef3c7;
+    --amber-ink:#92400e;
+    --amber-line:#fcd34d;
+    --green-soft:#dcfce7;
+    --green-line:#bbf7d0;
+    --green-wash:#f0fdf4;
+    --red-soft:#fee2e2;
+    --wa-body-bg:#efeae2;
+    --wa-in-bg:#ffffff;
+    --wa-out-bg:#d9fdd3;
+    --wa-conv-pac:#dcfce7;
+    --wa-conv-robo:#e2e8f0;
+    --wa-msg-t:var(--muted);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%}
@@ -44,10 +67,10 @@
   :focus{outline:none}
   :focus-visible{outline:2px solid var(--clinic);outline-offset:2px;border-radius:6px}
   input,select,textarea{caret-color:var(--clinic)}
-  *{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
+  *{scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
   *::-webkit-scrollbar{width:10px;height:10px}
-  *::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px;border:3px solid transparent;background-clip:content-box}
-  *::-webkit-scrollbar-thumb:hover{background:#94a3b8;background-clip:content-box}
+  *::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px;border:3px solid transparent;background-clip:content-box}
+  *::-webkit-scrollbar-thumb:hover{background:var(--scroll-hover);background-clip:content-box}
   svg.ic{width:18px;height:18px;flex:0 0 auto;display:inline-block;vertical-align:-3px}
   svg.ic-lg{width:22px;height:22px}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
@@ -72,7 +95,7 @@
   }
   .brand .logo{
     width:36px;height:36px;border-radius:10px;
-    background:var(--clinic);
+    background:var(--accent-solid);
     display:flex;align-items:center;justify-content:center;
     color:#fff;flex:0 0 auto;
   }
@@ -116,7 +139,7 @@
   .topbar .chip{font-size:12px;min-height:32px}
   .avatar{
     width:38px;height:38px;border-radius:50%;
-    background:var(--clinic);
+    background:var(--accent-solid);
     color:#fff;display:flex;align-items:center;justify-content:center;
     font-weight:700;font-size:14px;flex:0 0 auto;
   }
@@ -129,9 +152,9 @@
   }
   .busca-global input{border:none;background:none;padding:10px 0;min-height:44px;font-size:14px}
   .busca-global input:focus,.busca-global input:focus-visible{outline:none;box-shadow:none;border:none}
-  .busca-global .kbd{font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:#fff;white-space:nowrap}
+  .busca-global .kbd{font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:var(--card);white-space:nowrap}
   .busca-resultados{
-    position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;
+    position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);
     border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 20px rgba(15,23,42,.10);
     max-height:360px;overflow:auto;z-index:40;padding:6px;
   }
@@ -152,7 +175,7 @@
 
   .card{
     background:var(--card);border:1px solid var(--border);
-    border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.04);
+    border-radius:14px;padding:18px;box-shadow:var(--shadow-card);
     min-width:0;
   }
   .grid{display:grid;gap:16px}
@@ -179,20 +202,20 @@
   .agenda-head .date{color:var(--muted);font-size:14px}
   .dia-nav{display:flex;gap:6px;align-items:center}
   .btn{
-    background:var(--clinic);color:#fff;border:1px solid transparent;padding:10px 16px;
+    background:var(--accent-solid);color:#fff;border:1px solid transparent;padding:10px 16px;
     border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;
     min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
     font-family:inherit;
   }
   .btn:hover{background:var(--clinic-dark)}
-  .btn.ghost{background:#fff;color:var(--text);border:1px solid var(--border)}
-  .btn.ghost:hover{background:var(--surface);border-color:#cbd5e1}
+  .btn.ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+  .btn.ghost:hover{background:var(--surface);border-color:var(--border-strong)}
   .btn.icon-only{width:44px;padding:0}
   .btn.small{min-height:36px;padding:7px 12px;font-size:12px}
   .btn[disabled]{opacity:.55;cursor:not-allowed}
 
-  .slot{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;background:#fff;transition:border-color .15s,box-shadow .15s}
-  .slot:hover{border-color:#cbd5e1;box-shadow:0 2px 6px rgba(15,23,42,.06)}
+  .slot{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card);transition:border-color .15s,box-shadow .15s}
+  .slot:hover{border-color:var(--border-strong);box-shadow:0 2px 6px rgba(15,23,42,.06)}
   .slot-main{display:flex;gap:14px;align-items:flex-start;padding:12px 14px;cursor:pointer;border-radius:12px}
   .slot .time{font-weight:700;font-size:15px;min-width:52px;color:var(--text);font-variant-numeric:tabular-nums}
   .slot .pname{font-weight:700;font-size:15px}
@@ -205,7 +228,7 @@
   .slot-acoes{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 12px}
   .tag{font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--surface);color:var(--text-2);border:1px solid var(--border)}
   .tag.confirmado{background:var(--clinic-soft);color:var(--clinic-dark);border-color:transparent}
-  .tag.aguardando{background:#fef3c7;color:#92400e;border-color:transparent}
+  .tag.aguardando{background:var(--amber-soft);color:var(--amber-ink);border-color:transparent}
   .tag.retorno{background:var(--surface);color:var(--text-2)}
 
   .alerta-item{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid var(--border);border-radius:11px;margin-bottom:8px;font-size:13px}
@@ -216,13 +239,13 @@
   /* TABELAS */
   table{width:100%;border-collapse:collapse;min-width:480px}
   th{font-size:12px;color:var(--text-2);text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:600}
-  td{padding:12px;border-bottom:1px solid #eef2f7;font-size:14px}
+  td{padding:12px;border-bottom:1px solid var(--border-soft);font-size:14px}
   tr.row{cursor:pointer}
   tr.row:hover{background:var(--surface)}
   .pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:10px;background:var(--surface);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
-  .pill.quit{background:#dcfce7;color:var(--green);border-color:transparent}
-  .pill.pend{background:#fee2e2;color:var(--red);border-color:transparent}
-  .pill.wait{background:#fef3c7;color:#92400e;border-color:transparent}
+  .pill.quit{background:var(--green-soft);color:var(--green);border-color:transparent}
+  .pill.pend{background:var(--red-soft);color:var(--red);border-color:transparent}
+  .pill.wait{background:var(--amber-soft);color:var(--amber-ink);border-color:transparent}
 
   /* FICHA DO PACIENTE */
   .pac-layout{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:16px;align-items:start}
@@ -248,21 +271,21 @@
     font-size:12px;color:var(--muted);background:var(--surface);cursor:pointer;font-variant-numeric:tabular-nums;
   }
   .tooth:hover{border-color:var(--clinic)}
-  .tooth.done{background:var(--clinic);color:#fff;border-color:var(--clinic)}
-  .tooth.todo{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+  .tooth.done{background:var(--accent-solid);color:#fff;border-color:var(--accent-solid)}
+  .tooth.todo{background:var(--amber-soft);color:var(--amber-ink);border-color:var(--amber-line)}
 
   /* EXAMES */
   .radio{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b1220}
   .radio .thumb{height:120px;display:flex;align-items:center;justify-content:center;color:#64748b}
   .radio .thumb svg.ic{width:38px;height:38px}
-  .radio .cap{padding:10px 12px;font-size:12px;background:#fff}
+  .radio .cap{padding:10px 12px;font-size:12px;background:var(--card)}
   .radio .cap b{display:block;font-size:13px}
   .radio .cap span{color:var(--muted)}
 
   /* TOAST */
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-    background:#0f172a;color:#fff;padding:13px 20px;border-radius:11px;font-size:13px;
+    background:var(--toast-bg);color:#fff;padding:13px 20px;border-radius:11px;font-size:13px;
     opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:300;max-width:92vw;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -294,7 +317,7 @@
   .field label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px}
   select,input[type=text],input[type=date],input[type=time],input[type=number],input[type=password],textarea{
     width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;
-    font-size:14px;background:#fff;color:var(--text);font-family:inherit;min-height:44px;
+    font-size:14px;background:var(--card);color:var(--text);font-family:inherit;min-height:44px;
   }
   input[type=date],input[type=time]{font-variant-numeric:tabular-nums}
   select:focus,input:focus,textarea:focus{border-color:var(--clinic);box-shadow:0 0 0 3px var(--clinic-soft);outline:none}
@@ -302,7 +325,7 @@
   textarea{resize:vertical;min-height:64px}
   input.quitar-input{width:104px;padding:8px;font-size:13px;text-align:right;min-height:38px}
   .hist-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto}
-  .hist-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:#fff}
+  .hist-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--card)}
   .hist-item .dt{color:var(--muted);font-size:12px;min-width:136px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   .hist-item .tipo{font-weight:600;display:inline-flex;align-items:center;gap:6px}
   .hist-item .tipo svg.ic{width:15px;height:15px}
@@ -311,14 +334,14 @@
   .hist-item .val{margin-left:auto;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
   .func-link{color:var(--clinic);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px;background:none;border:none;font-size:inherit;font-family:inherit}
   .func-link:hover{color:var(--clinic-dark)}
-  .ponto-item{display:flex;align-items:center;gap:12px;padding:9px 10px;border-bottom:1px solid #eef2f7;font-size:13px}
+  .ponto-item{display:flex;align-items:center;gap:12px;padding:9px 10px;border-bottom:1px solid var(--border-soft);font-size:13px}
   .ponto-item:last-child{border-bottom:none}
   .ponto-item .dt{color:var(--muted);font-size:12px;min-width:88px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
   .period-btns{display:flex;gap:6px;flex-wrap:wrap}
-  .pbtn{background:#fff;border:1px solid var(--border);color:var(--muted);padding:8px 11px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;min-height:36px;font-family:inherit}
+  .pbtn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:8px 11px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;min-height:36px;font-family:inherit}
   .pbtn:hover{border-color:var(--clinic)}
-  .pbtn.active{background:var(--clinic);color:#fff;border-color:var(--clinic)}
+  .pbtn.active{background:var(--accent-solid);color:#fff;border-color:var(--accent-solid)}
   .fsearch{width:auto;flex:1;min-width:150px;padding:9px 11px;font-size:13px;min-height:40px}
   .custom-range{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--muted);flex-wrap:wrap}
   .custom-range input{width:auto;padding:8px;font-size:13px}
@@ -327,11 +350,11 @@
   .checkbox-group input{width:17px;height:17px;accent-color:var(--clinic);cursor:pointer}
 
   /* MODAL */
-  .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-overlay{position:fixed;inset:0;background:var(--veil);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
   .modal-overlay.open{display:flex}
   .modal{
-    background:#fff;border-radius:16px;width:560px;max-width:94vw;max-height:90vh;overflow:auto;padding:22px;
-    box-shadow:0 22px 50px rgba(15,23,42,.3);
+    background:var(--card);border-radius:16px;width:560px;max-width:94vw;max-height:90vh;overflow:auto;padding:22px;
+    box-shadow:var(--shadow-modal);
   }
   .modal h3{font-size:18px;font-weight:700;margin-bottom:16px}
   .modal .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap}
@@ -349,7 +372,7 @@
   .rec-resumo .rr span{font-size:12px;color:var(--muted)}
   .rec-resumo .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
   .boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .box{display:flex;flex-direction:column;gap:8px;border:1px solid var(--border);border-radius:12px;padding:13px;cursor:pointer;background:#fff}
+  .box{display:flex;flex-direction:column;gap:8px;border:1px solid var(--border);border-radius:12px;padding:13px;cursor:pointer;background:var(--card)}
   .box:hover{border-color:var(--clinic)}
   .box:focus-within{border-color:var(--clinic);box-shadow:0 0 0 3px var(--clinic-soft)}
   .box-moeda{font-size:12px;font-weight:700;color:var(--text-2)}
@@ -371,7 +394,7 @@
   /* CONFIG DO ROBÔ */
   .config-group{margin-bottom:16px}
   .config-group .gtitle{font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:2px}
-  .config-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid #eef2f7}
+  .config-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--border-soft)}
   .config-row:last-child{border-bottom:none}
   .config-row .lbl{font-size:14px;font-weight:500;color:var(--text)}
   .config-row .desc{font-size:12px;color:var(--muted);margin-top:2px}
@@ -379,9 +402,9 @@
   .config-row .ctl input[type=text],.config-row .ctl input[type=number],.config-row .ctl select,.config-row .ctl input[type=time]{width:140px;padding:8px;font-size:13px}
   .switch{position:relative;display:inline-block;width:46px;height:28px;flex-shrink:0;cursor:pointer}
   .switch input{opacity:0;width:0;height:0;position:absolute}
-  .switch .slider{position:absolute;inset:0;background:#cbd5e1;border-radius:28px;transition:.2s;pointer-events:none}
+  .switch .slider{position:absolute;inset:0;background:var(--border-strong);border-radius:28px;transition:.2s;pointer-events:none}
   .switch .slider:before{content:"";position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
-  .switch input:checked + .slider{background:var(--clinic)}
+  .switch input:checked + .slider{background:var(--accent-solid)}
   .switch input:checked + .slider:before{transform:translateX(18px)}
   .switch input:focus-visible + .slider{outline:2px solid var(--clinic);outline-offset:2px}
 
@@ -392,38 +415,38 @@
   .chip button{background:none;border:none;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
 
   /* WHATSAPP (mock) */
-  .wa-wrap{display:flex;padding:8px;gap:8px;border:1px solid var(--border);border-radius:14px;overflow:hidden;height:520px;background:#fff}
+  .wa-wrap{display:flex;padding:8px;gap:8px;border:1px solid var(--border);border-radius:14px;overflow:hidden;height:520px;background:var(--card)}
   .wa-side{width:300px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);flex-shrink:0}
   .wa-side .wa-search{padding:10px;border-bottom:1px solid var(--border)}
   .wa-side .wa-list{flex:1;overflow:auto}
-  .wa-chat-item{display:flex;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid #eef2f7;align-items:center}
-  .wa-chat-item:hover{background:#fff}
+  .wa-chat-item{display:flex;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border-soft);align-items:center}
+  .wa-chat-item:hover{background:var(--card)}
   .wa-chat-item.active{background:var(--clinic-soft)}
-  .wa-av{width:38px;height:38px;border-radius:50%;background:var(--clinic);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+  .wa-av{width:38px;height:38px;border-radius:50%;background:var(--accent-solid);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
   .wa-chat-item .wa-name{font-weight:600;font-size:13px}
   .wa-chat-item .wa-prev{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
   .wa-chat-item .wa-time{font-size:12px;color:var(--muted);margin-left:auto;flex-shrink:0}
-  .wa-chat-item .wa-badge{background:var(--clinic);color:#fff;font-size:12px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;margin-left:auto;flex-shrink:0}
+  .wa-chat-item .wa-badge{background:var(--accent-solid);color:#fff;font-size:12px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;margin-left:auto;flex-shrink:0}
   .wa-main{flex:1;display:flex;flex-direction:column;min-width:0}
   .wa-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
   .wa-head .wa-av{width:34px;height:34px;font-size:13px}
   .wa-head .wa-name{font-weight:700;font-size:14px}
   .wa-head .wa-status{font-size:12px;color:var(--muted)}
-  .wa-body{flex:1;overflow:auto;padding:16px;background:#efeae2;display:flex;flex-direction:column;gap:8px}
+  .wa-body{flex:1;overflow:auto;padding:16px;background:var(--wa-body-bg);display:flex;flex-direction:column;gap:8px}
   .wa-msg{max-width:75%;padding:9px 12px;border-radius:11px;font-size:13px;line-height:1.5}
-  .wa-msg.in{background:#fff;align-self:flex-start;border-top-left-radius:3px}
-  .wa-msg.out{background:#d9fdd3;align-self:flex-end;border-top-right-radius:3px}
-  .wa-msg .t{display:block;font-size:12px;color:var(--muted);text-align:right;margin-top:3px}
+  .wa-msg.in{background:var(--wa-in-bg);align-self:flex-start;border-top-left-radius:3px}
+  .wa-msg.out{background:var(--wa-out-bg);align-self:flex-end;border-top-right-radius:3px}
+  .wa-msg .t{display:block;font-size:12px;color:var(--wa-msg-t);text-align:right;margin-top:3px}
   .wa-input{display:flex;gap:10px;padding:12px;border-top:1px solid var(--border);background:var(--surface)}
   .wa-input input{flex:1}
 
   /* LOGIN */
   .login-overlay{position:fixed;inset:0;background:var(--sidebar);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
   .login-overlay.open{display:flex}
-  .login-card{background:#fff;border-radius:18px;padding:34px 30px;width:390px;max-width:94vw;box-shadow:0 30px 70px rgba(2,6,23,.5)}
+  .login-card{background:var(--card);border-radius:18px;padding:34px 30px;width:390px;max-width:94vw;box-shadow:var(--shadow-modal)}
   .login-cab{display:flex;align-items:center;gap:14px;text-align:left;margin-bottom:14px}
   .login-cab h2,.login-cab .sub{text-align:left}
-  .login-card .logo{width:48px;height:48px;border-radius:14px;background:var(--clinic);display:flex;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}
+  .login-card .logo{width:48px;height:48px;border-radius:14px;background:var(--accent-solid);display:flex;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}
   .login-card .logo svg.ic{width:28px;height:28px}
   .login-card h2{text-align:center;font-size:20px;font-weight:800;margin-bottom:4px}
   .login-card .sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:22px}
@@ -470,17 +493,136 @@
   }
   button{font-family:inherit}
   ::placeholder{color:var(--muted);opacity:1}
-  .chip.pend{background:#fee2e2;color:var(--red);border-color:transparent}
-  .chip.quit{background:#dcfce7;color:var(--green);border-color:transparent}
+  .chip.pend{background:var(--red-soft);color:var(--red);border-color:transparent}
+  .chip.aguardando{background:var(--amber-soft);color:var(--amber-ink);border-color:transparent}
+  .chip.quit{background:var(--green-soft);color:var(--green);border-color:transparent}
   /* botão "editar" inline da cotação: alvo com altura confortável */
-  #btnEditarCotacao{min-height:36px;padding:0 12px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--clinic-dark);cursor:pointer}
+  #btnEditarCotacao{min-height:36px;padding:0 12px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--clinic-dark);cursor:pointer}
   #btnEditarCotacao:hover{border-color:var(--clinic)}
-  .nova-item{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;background:#fff;flex-wrap:wrap}
+  .nova-item{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--surface);flex-wrap:wrap}
   .nova-item .pname{font-weight:700;font-size:14px}
   .nova-item .proc{font-size:13px;color:var(--text-2)}
-  .nova-item .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .nova-item .meta{font-size:12px;color:var(--muted);margin-top:3px}
   .nova-actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  /* ===== FILA DE REVISÃO DO ROBÔ — primeiro bloco da tela Hoje ===== */
+  .fila-robo{padding:16px 18px}
+  .fila-topo{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border)}
+  .fila-conta{display:flex;align-items:center;gap:14px;min-width:0}
+  .fila-num{font-size:42px;line-height:1;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .fila-txt{display:block;min-width:0}
+  .fila-titulo{display:block;font-size:15px;font-weight:700}
+  .fila-regra{display:block;font-size:12px;color:var(--muted);margin-top:3px;max-width:56ch;text-wrap:pretty}
+  .fila-selo{margin-left:auto;font-size:12px}
+  .fila-selo[hidden]{display:none}
+  .fila-pos{width:26px;height:26px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-2);flex:0 0 auto}
+  .fila-dados{flex:1 1 220px;min-width:0}
+  .fila-dados .pname{font-weight:700;font-size:14px}
+  .fila-dados .meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .fila-vazia{display:flex;align-items:center;gap:10px;padding:14px 2px;font-size:13px;color:var(--text-2)}
+  .fila-vazia svg.ic{color:var(--green)}
+  #novasList>*:last-child{margin-bottom:2px}
+  .atalho-robo{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:inherit;font-size:14px;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:16px;cursor:pointer;min-height:44px}
+  .atalho-robo:hover{border-color:var(--border-strong);background:var(--surface)}
+  .atalho-robo b{font-variant-numeric:tabular-nums}
+  .atalho-robo .seta{margin-left:auto;color:var(--muted)}
+  .wa-vazia{margin:auto;max-width:46ch;text-align:center;font-size:13px;color:var(--text-2);padding:18px;line-height:1.6}
+  .conversa-msg{padding:10px 12px;border-radius:10px;max-width:85%;font-size:13px}
+  .conversa-msg.in{background:var(--wa-conv-pac)}
+  .conversa-msg.out{background:var(--wa-conv-robo);align-self:flex-end}
+  .fb-txt{flex:1;color:var(--text-2);font-size:13px}
+  .ind-box{background:var(--green-wash);border-color:var(--green-line)}
+  .orc-resumo{font-size:13px;line-height:2;color:var(--text-2)}
+
+  /* ===== TEMA ESCURO — as mesmas variáveis, trocadas em um lugar ===== */
+  :root{color-scheme:light}
+  html[data-tema="escuro"]{
+    color-scheme:dark;
+    --clinic:#5ea9d0;
+    --clinic-dark:#9ccbe6;
+    --clinic-soft:#1e3a4d;
+    --accent:var(--clinic);
+    --accent-soft:var(--clinic-soft);
+    --accent-solid:#24688c;
+    --sidebar:#0a1220;
+    --sidebar-hover:#1b2738;
+    --bg:#0e1622;
+    --card:#161f2d;
+    --surface:#1b2534;
+    --border:#2a3648;
+    --border-strong:#3b4a61;
+    --border-soft:#232f40;
+    --text:#e8eef6;
+    --text-2:#c6d1e0;
+    --muted:#9aa9be;
+    --scroll:#3b4a61;
+    --scroll-hover:#54667f;
+    --shadow-card:0 1px 2px rgba(0,0,0,.45);
+    --shadow-modal:0 22px 50px rgba(0,0,0,.62);
+    --veil:rgba(2,6,14,.66);
+    --toast-bg:#22304a;
+    --green:#4ade80;
+    --amber:#fbbf24;
+    --red:#f87171;
+    --amber-soft:#3a2c0d;
+    --amber-ink:#fbbf24;
+    --amber-line:#6b5518;
+    --green-soft:#123024;
+    --green-line:#26553d;
+    --green-wash:#12241c;
+    --red-soft:#3a1a1a;
+    --wa-body-bg:#0b1a1f;
+    --wa-in-bg:#1f2a30;
+    --wa-out-bg:#1d5a45;
+    --wa-conv-pac:#1d5a45;
+    --wa-conv-robo:#252f3d;
+    --wa-msg-t:#c3cede;
+  }
+  html[data-tema="escuro"] .toast{border:1px solid var(--border-strong);box-shadow:0 10px 26px rgba(0,0,0,.5)}
+  html[data-tema="escuro"] .radio{border-color:var(--border)}
+  html[data-tema="escuro"] .tooth.done{border-color:var(--accent-solid)}
+
+  /* ===== IMPRESSÃO — o relatório sai sempre no tema claro ===== */
+  @media print{
+    html,html[data-tema="escuro"]{
+      color-scheme:light;
+      --clinic:#17506e;--clinic-dark:#123c53;--clinic-soft:#e7eff4;
+      --accent-solid:var(--clinic);--accent:var(--clinic);--accent-soft:var(--clinic-soft);
+      --sidebar:#0f172a;--sidebar-hover:#1e293b;
+      --bg:#ffffff;--card:#ffffff;--surface:#f8fafc;
+      --border:#e2e8f0;--border-strong:#cbd5e1;--border-soft:#eef2f7;
+      --text:#0f172a;--text-2:#334155;--muted:#475569;
+      --green:#15803d;--amber:#b45309;--red:#b91c1c;
+      --amber-soft:#fef3c7;--amber-ink:#92400e;--amber-line:#fcd34d;
+      --green-soft:#dcfce7;--green-line:#bbf7d0;--green-wash:#f0fdf4;--red-soft:#fee2e2;
+      --shadow-card:none;--shadow-modal:none;--veil:transparent;--toast-bg:#0f172a;
+      --wa-body-bg:#efeae2;--wa-in-bg:#ffffff;--wa-out-bg:#d9fdd3;
+      --wa-conv-pac:#dcfce7;--wa-conv-robo:#e2e8f0;--wa-msg-t:#475569;
+    }
+    html,html[data-tema="escuro"] body{background:#fff;color:#0f172a}
+    .sidebar,.topbar,.toast,.no-print{display:none!important}
+    .main{margin-left:0}
+    .content{padding:0}
+    .tabs,.btn,.pbtn{display:none!important}
+    .card,.modal{box-shadow:none;border-color:#cbd5e1}
+    table{min-width:0}
+    .tw{overflow:visible}
+    .modal-overlay{position:static;display:none;background:none;padding:0}
+    .modal-overlay.open{display:block}
+    .modal{width:auto;max-width:100%;max-height:none;overflow:visible}
+    a{color:inherit;text-decoration:none}
+  }
+
+  @media(max-width:760px){
+    .fila-num{font-size:34px}
+    .fila-robo{padding:14px}
+    .fila-regra{max-width:none}
+  }
+
 </style>
+<script>
+  /* a escolha de tema vale antes do resto da página pintar */
+  try{ if(localStorage.getItem('cd-tema') === 'escuro') document.documentElement.setAttribute('data-tema','escuro'); }catch(e){}
+</script>
 </head>
 
 <body>
@@ -511,6 +653,9 @@
   <symbol id="i-alerta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></symbol>
   <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8z"/><path d="M14 3.5V8h4.5"/></symbol>
   <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5A2 2 0 0 1 5.5 6.5h1.6l1.2-2h6.4l1.2 2h2.1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.7" r="3.2"/></symbol>
+  <symbol id="i-lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.3M12 18.9v2.3M4.5 4.5l1.6 1.6M17.9 17.9l1.6 1.6M2.8 12h2.3M18.9 12h2.3M4.5 19.5l1.6-1.6M17.9 6.1l1.6-1.6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.1c0 4-3.8 7.1-8.5 7.1-1 0-1.9-.14-2.8-.4L5 20.6l1.2-3.4a6.8 6.8 0 0 1-2.7-5.1C3.5 8.1 7.3 5 12 5s8.5 3.1 8.5 7.1z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></symbol>
 </svg>
 
 <div class="login-overlay open" id="loginOverlay">
@@ -544,8 +689,11 @@
     </span>
   </div>
   <nav class="nav" aria-label="Menu principal">
-    <button class="active" data-screen="agenda" title="Hoje — agenda do dia, revisão do robô e alertas de retorno" aria-label="Hoje">
-      <span class="ico"><svg class="ic"><use href="#i-hoje"/></svg></span><span>Hoje</span><span class="badge" id="novasBadge">3</span>
+    <button data-screen="robo" title="Consultas do robô — fila de revisões do robô de WhatsApp" aria-label="Consultas do robô">
+      <span class="ico"><svg class="ic"><use href="#i-robo"/></svg></span><span>Consultas do robô</span><span class="badge" id="novasBadge">3</span>
+    </button>
+    <button class="active" data-screen="agenda" title="Hoje — agenda do dia e alertas de retorno" aria-label="Hoje">
+      <span class="ico"><svg class="ic"><use href="#i-hoje"/></svg></span><span>Hoje</span>
     </button>
     <button data-screen="pacientes" title="Pacientes — lista e ficha completa do lado" aria-label="Pacientes">
       <span class="ico"><svg class="ic"><use href="#i-pacientes"/></svg></span><span>Pacientes</span><span class="badge">6</span>
@@ -576,11 +724,39 @@
     <div class="spacer"></div>
     <span class="chip neutro" title="Este PC da recepção funciona sem internet. O backup vai para o celular a cada 15 minutos."><svg class="ic" aria-hidden="true"><use href="#i-ok-circulo"/></svg> Salvo neste PC · backup 15 min</span>
     <div class="avatar" id="topAvatar" title="Usuário logado">C</div>
+    <button class="btn ghost icon-only" id="btnTema" type="button" aria-pressed="false" aria-label="Ativar modo escuro" title="Modo escuro">
+      <svg class="ic" aria-hidden="true"><use id="btnTemaIcone" href="#i-lua"/></svg>
+    </button>
     <button class="btn ghost sair-txt" id="btnLogout" title="Registrar saída e sair"><svg class="ic" aria-hidden="true"><use href="#i-sair"/></svg><span>Sair</span></button>
   </div>
 
   <div class="content">
 
+    <!-- ============ CONSULTAS DO ROBÔ (fila de revisão da secretária) ============ -->
+    <section class="screen" id="screen-robo" aria-labelledby="filaTitulo">
+      <div class="agenda-head">
+        <div>
+          <h2 class="day" id="filaTitulo">Consultas do robô</h2>
+          <div class="date">Fila da secretária — o robô marca com 2 dias de antecedência e nunca para o dia seguinte</div>
+        </div>
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn ghost" id="btnFilaHoje"><svg class="ic" aria-hidden="true"><use href="#i-hoje"/></svg> Ver a agenda de hoje</button>
+      </div>
+
+      <div class="card fila-robo">
+        <div class="fila-topo">
+          <div class="fila-conta">
+            <span class="fila-num" id="kpiNovas">3</span>
+            <span class="fila-txt">
+              <b class="fila-titulo">consultas aguardando revisão</b>
+              <span class="fila-regra">Leia a conversa do robô com o paciente, confirme se o horário está certo ou corrija antes do paciente chegar.</span>
+            </span>
+          </div>
+          <span class="chip aguardando fila-selo" id="filaSelo">aguardando revisão</span>
+        </div>
+        <div id="novasList"></div>
+      </div>
+    </section>
     <!-- ============ HOJE (agenda + robô + retornos) ============ -->
     <section class="screen active" id="screen-agenda" aria-labelledby="hojeTitulo">
       <div class="agenda-head">
@@ -599,6 +775,11 @@
         <button class="btn" id="btnNovaConsulta"><svg class="ic" aria-hidden="true"><use href="#i-mais"/></svg> Nova consulta</button>
       </div>
 
+      <button class="atalho-robo" id="atalhoRobo" type="button">
+        <svg class="ic" aria-hidden="true"><use href="#i-robo"/></svg>
+        <span><b id="atalhoContagem">3</b> <span id="atalhoTexto">consultas do robô aguardando revisão — abrir a fila</span></span>
+        <svg class="ic seta" aria-hidden="true"><use href="#i-dir"/></svg>
+      </button>
       <div class="grid g3" style="margin-bottom:16px">
         <div class="card kpi"><div class="label">Consultas no dia</div><div class="value" id="kpiConsultas">5</div><div class="delta neutral" id="kpiConsultasSub">2 dentistas em atendimento</div></div>
         <div class="card kpi"><div class="label">A receber hoje</div><div class="value pend" id="kpiReceber">R$ 0</div><div class="delta neutral">pendências de quem tem consulta</div></div>
@@ -611,16 +792,9 @@
           <div id="agendaSlots"></div>
           <div class="hint">Clique no cartão para abrir a ficha do paciente. Cada cartão traz telefone, idioma, valor e pendência, com as três ações do balcão.</div>
         </div>
-        <div>
-          <div class="card" style="margin-bottom:16px">
-            <div class="section-title">Consultas do robô para revisar · <span class="count" id="kpiNovas">3</span></div>
-            <div id="novasList"></div>
-            <div class="hint">O robô agenda com 2 dias de antecedência e nunca no dia seguinte. A secretária revisa e confirma aqui.</div>
-          </div>
-          <div class="card">
-            <div class="section-title">Alertas de retorno</div>
-            <div id="alertasRetorno"></div>
-          </div>
+        <div class="card">
+          <div class="section-title">Alertas de retorno</div>
+          <div id="alertasRetorno"></div>
         </div>
       </div>
     </section>
@@ -1384,9 +1558,9 @@
     s = String(s==null?'':s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
     const n = parseFloat(s); return isNaN(n) ? 0 : n;
   }
-  const screens = ['agenda','pacientes','dinheiro','equipe','funcionario','whatsapp'];
+  const screens = ['robo','agenda','pacientes','dinheiro','equipe','funcionario','whatsapp'];
   const titles = {
-    agenda:'Hoje', pacientes:'Pacientes', dinheiro:'Dinheiro',
+    robo:'Consultas do robô', agenda:'Hoje', pacientes:'Pacientes', dinheiro:'Dinheiro',
     equipe:'Time', funcionario:'Ficha do funcionário', whatsapp:'Robô & Conversas'
   };
   const patients = {
@@ -1451,7 +1625,7 @@
   }
 
   function go(screen){
-    const legado = {prontuario:'pacientes', orcamento:'dinheiro', financeiro:'dinheiro', radiografias:'pacientes', novasconsultas:'agenda', feedbacks:'whatsapp'};
+    const legado = {prontuario:'pacientes', orcamento:'dinheiro', financeiro:'dinheiro', radiografias:'pacientes', novasconsultas:'robo', novas:'robo', feedbacks:'whatsapp'};
     screen = legado[screen] || screen;
     screens.forEach(s=>{
       document.getElementById('screen-'+s).classList.toggle('active', s===screen);
@@ -1706,7 +1880,7 @@
     const el = document.getElementById('prontConversas');
     const chat = waChats[nome];
     if(!chat){ el.innerHTML = '<div class="hint sem-margem">Nenhuma conversa registrada com este paciente.</div>'; return; }
-    el.innerHTML = chat.msgs.map(m=>'<div style="background:' + (m.dir === 'in' ? '#dcfce7' : '#e2e8f0') + ';padding:10px 12px;border-radius:10px;max-width:85%;' + (m.dir === 'in' ? '' : 'align-self:flex-end') + '"><b>' + (m.dir === 'in' ? 'Paciente' : 'Robô') + ' (' + m.h + '):</b> ' + m.t + '</div>').join('');
+    el.innerHTML = chat.msgs.map(m=>'<div class="conversa-msg ' + (m.dir === 'in' ? 'in' : 'out') + '"><b>' + (m.dir === 'in' ? 'Paciente' : 'Robô') + ' (' + m.h + '):</b> ' + m.t + '</div>').join('');
   }
 
   // Dropdowns dinâmicos (área -> serviço -> local)
@@ -2251,6 +2425,7 @@
   document.querySelectorAll('[data-report]').forEach(b=>{
     b.addEventListener('click', ()=>{
       const t = b.dataset.report;
+      if(!funcAtual){ toast('Selecione um funcionário na lista para gerar o relatório'); return; }
       if(t==='ponto'){
         const n = (funcAtual.ponto||[]).filter(p=>matchFiltro(p.data, `${p.data} ${MESES[parseData(p.data).getMonth()]}`, filtro.ponto)).length;
         toast('Relatório de ponto: ' + n + ' registro(s) no período');
@@ -2328,7 +2503,7 @@
     [...feedbacks].reverse().forEach(f=>{
       const div = document.createElement('div');
       div.className = 'hist-item';
-      div.innerHTML = '<span class="dt">' + dma(f.dia) + '</span><span class="tipo" style="color:var(--amber)">' + estrela + f.nota + '/5</span><span style="flex:1;color:#334155;font-size:13px">' + f.comentario + '</span><span class="muted" style="font-size:12px">' + f.paciente + '</span>';
+      div.innerHTML = '<span class="dt">' + dma(f.dia) + '</span><span class="tipo" style="color:var(--amber)">' + estrela + f.nota + '/5</span><span class="fb-txt">' + f.comentario + '</span><span class="muted" style="font-size:12px">' + f.paciente + '</span>';
       el.appendChild(div);
     });
   }
@@ -2339,13 +2514,13 @@
     const p = patients[nome];
     let html = '';
     if(p && p.indicacoes > 0){
-      html += '<div class="evo-box" style="margin-bottom:10px;background:#f0fdf4;border-color:#bbf7d0"><b>Indica pacientes:</b> já indicou ' + p.indicacoes + ' pessoa(s) — paciente que fala bem da clínica.</div>';
+      html += '<div class="evo-box ind-box" style="margin-bottom:10px"><b>Indica pacientes:</b> já indicou ' + p.indicacoes + ' pessoa(s) — paciente que fala bem da clínica.</div>';
     }
     if(!lista.length){
       html += '<div class="hint">Nenhum feedback registrado ainda.</div>';
     } else {
       lista.slice().reverse().forEach(f=>{
-        html += '<div class="hist-item" style="margin-bottom:6px"><span class="dt">' + dma(f.dia) + '</span><span class="tipo" style="color:var(--amber)">' + estrela + f.nota + '/5</span><span style="flex:1;color:#334155;font-size:13px">' + f.comentario + '</span></div>';
+        html += '<div class="hist-item" style="margin-bottom:6px"><span class="dt">' + dma(f.dia) + '</span><span class="tipo" style="color:var(--amber)">' + estrela + f.nota + '/5</span><span class="fb-txt">' + f.comentario + '</span></div>';
       });
     }
     el.innerHTML = html;
@@ -2454,7 +2629,7 @@
         <thead><tr><th>Procedimento</th><th>Dente</th><th>Valor</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table>
-      <div style="font-size:13px;line-height:2;color:#334155;margin-top:14px">
+      <div class="orc-resumo" style="margin-top:14px">
         Subtotal: <b class="mono">${o.subtotal}</b><br>
         Desconto: <b class="mono">${o.desconto}</b><br>
         <div style="border-top:1px solid var(--border);margin:8px 0"></div>
@@ -2535,35 +2710,58 @@
 
   function renderNovas(){
     const el = document.getElementById('novasList');
+    const total = novasConsultas.length;
     el.innerHTML = '';
-    if(!novasConsultas.length){ el.innerHTML = '<div class="hint sem-margem">Nenhuma consulta pendente de revisão.</div>'; }
+    if(!total){
+      el.innerHTML = '<div class="fila-vazia"><svg class="ic" aria-hidden="true"><use href="#i-ok-circulo"/></svg>'
+        + '<span><b>Nada para revisar</b> — o robô não marcou nada novo desde a última conferência.</span></div>';
+    }
     novasConsultas.forEach((c,i)=>{
       const div = document.createElement('div');
       div.className = 'nova-item';
-      div.innerHTML = '<div>'
+      div.innerHTML = '<span class="fila-pos" aria-hidden="true">' + (i+1) + '</span>'
+        + '<div class="fila-dados">'
         + '<div class="pname">' + c.nome + '</div>'
         + '<div class="proc">' + c.proc + '</div>'
         + '<div class="meta">' + dma(c.dia) + ' · ' + c.hora + ' · agendada pelo robô</div>'
         + '</div>'
         + '<div class="nova-actions">'
+        + '<button class="btn ghost small" data-i="' + i + '" data-acao="conversa" aria-label="Ver conversa do robô com ' + c.nome + '"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg> Ver conversa</button>'
         + '<button class="btn small" data-i="' + i + '" data-acao="confirmar"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Confirmar</button>'
-        + '<button class="btn ghost small" data-i="' + i + '" data-acao="reagendar">Reagendar</button>'
+        + '<button class="btn ghost small" data-i="' + i + '" data-acao="reagendar"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg> Corrigir</button>'
         + '<button class="btn ghost small" data-i="' + i + '" data-acao="cancelar">Cancelar</button>'
         + '</div>';
       el.appendChild(div);
     });
-    document.getElementById('novasBadge').textContent = novasConsultas.length;
-    document.getElementById('kpiNovas').textContent = novasConsultas.length;
+    document.getElementById('novasBadge').textContent = total;
+    document.getElementById('kpiNovas').textContent = total;
+    document.getElementById('filaSelo').hidden = total === 0;
+    const cont = document.getElementById('atalhoContagem');
+    const contTxt = document.getElementById('atalhoTexto');
+    if(cont) cont.textContent = total;
+    if(contTxt) contTxt.textContent = total
+      ? (total === 1 ? 'consulta do robô aguardando revisão — abrir a fila' : 'consultas do robô aguardando revisão — abrir a fila')
+      : 'nada para revisar — abrir a fila do robô';
+    el.setAttribute('aria-label', total
+      ? total + (total === 1 ? ' consulta aguardando revisão' : ' consultas aguardando revisão')
+      : 'Nenhuma consulta aguardando revisão');
   }
+
+  document.getElementById('atalhoRobo').addEventListener('click', ()=>go('robo'));
+  document.getElementById('btnFilaHoje').addEventListener('click', ()=>go('agenda'));
 
   document.getElementById('novasList').addEventListener('click', e=>{
     const btn = e.target.closest('[data-acao]');
     if(!btn) return;
     const i = +btn.dataset.i;
     const c = novasConsultas[i];
+    if(btn.dataset.acao === 'conversa'){
+      abrirConversa(c.nome);
+      return;
+    }
     if(btn.dataset.acao === 'confirmar'){
       agendamentos.push({nome:c.nome, proc:c.proc, hora:c.hora, dia:c.dia, status:'confirmado'});
-      toast('Consulta de ' + c.nome + ' confirmada e movida para ' + caminhoDia(c.dia) + ' (' + dma(c.dia) + ')');
+      toast('Consulta de ' + c.nome + ' confirmada para ' + (c.dia >= -1 && c.dia <= 1 ? caminhoDia(c.dia) : 'o dia ' + dma(c.dia)) + ' às ' + c.hora);
       novasConsultas.splice(i,1);
       renderAgenda();
       renderProximas();
@@ -2762,6 +2960,31 @@
     el.scrollTop = el.scrollHeight;
   }
 
+  function renderWaSemConversa(nome){
+    document.getElementById('waHeadName').textContent = nome;
+    document.getElementById('waHeadAv').textContent = nome.charAt(0);
+    document.getElementById('waHeadStatus').textContent = 'sem conversa registrada';
+    document.getElementById('waBody').innerHTML = '<div class="wa-vazia"><b>Nenhuma conversa registrada com ' + nome + '.</b> <br>O robô ainda não trocou mensagem com este paciente — não há histórico para ler aqui.</div>';
+    waAtual = nome;
+    renderWaList(document.getElementById('waSearch').value);
+  }
+
+  /* Atalho "Ver conversa" da fila do robô: abre o WhatsApp já na conversa do paciente */
+  function abrirConversa(nome){
+    go('whatsapp');
+    if(waChats[nome]){
+      waAtual = nome;
+      waUnread[nome] = 0;
+      renderWaList();
+      renderWaBody();
+      atualizarWaBadge();
+      toast('Conversa de ' + nome + ' aberta — ' + waChats[nome].msgs.length + ' mensagem(ns) registradas');
+    } else {
+      renderWaSemConversa(nome);
+      toast('Nenhuma conversa registrada com ' + nome);
+    }
+  }
+
   function waAgora(){
     const d = new Date();
     const pad = n=>String(n).padStart(2,'0');
@@ -2790,6 +3013,7 @@
     const input = document.getElementById('waInput');
     const txt = input.value.trim();
     if(!txt) return;
+    if(!waChats[waAtual]){ toast('Nenhuma conversa registrada com ' + waAtual + ' — nada foi enviado'); return; }
     waChats[waAtual].msgs.push({dir:'out', t:txt, h:waAgora()});
     input.value = '';
     renderWaBody();
@@ -3022,6 +3246,23 @@
       if(aberto) fecharModal(aberto);
     }
   });
+
+  // ===== Tema claro / escuro (a escolha fica salva neste PC) =====
+  const btnTema = document.getElementById('btnTema');
+  const CHAVE_TEMA = 'cd-tema';
+  function temaEscuro(){ return document.documentElement.getAttribute('data-tema') === 'escuro'; }
+  function aplicarTema(escuro, avisar){
+    if(escuro) document.documentElement.setAttribute('data-tema','escuro');
+    else document.documentElement.removeAttribute('data-tema');
+    btnTema.setAttribute('aria-pressed', escuro ? 'true' : 'false');
+    btnTema.setAttribute('aria-label', escuro ? 'Ativar modo claro' : 'Ativar modo escuro');
+    btnTema.title = escuro ? 'Modo claro' : 'Modo escuro';
+    document.getElementById('btnTemaIcone').setAttribute('href', escuro ? '#i-sol' : '#i-lua');
+    try{ localStorage.setItem(CHAVE_TEMA, escuro ? 'escuro' : 'claro'); }catch(_){}
+    if(avisar) toast(escuro ? 'Modo escuro ativado' : 'Modo claro ativado');
+  }
+  btnTema.addEventListener('click', ()=>aplicarTema(!temaEscuro(), true));
+  aplicarTema(temaEscuro(), false);
 
   preencherLogin();
   atualizarCotacao();
