@@ -1411,7 +1411,9 @@
       <div class="agenda-head">
         <div>
           <h2 class="day" id="timeTitulo">Time</h2>
-          <div class="date">Equipe, ponto e pagamentos</div>
+          <div class="date">Equipe, ponto e pagamentos
+            <span class="pill wait" id="timeDemo" title="Não existe tabela de funcionários nem de ponto no banco ainda: os nomes, escalas, salários e batidas desta tela são de exemplo — não são dados reais da clínica.">demonstração · equipe e ponto ainda não vêm do banco</span>
+          </div>
         </div>
         <label class="sr-only" for="equipeBusca">Buscar funcionário</label>
         <input type="text" id="equipeBusca" class="fsearch" style="width:240px" placeholder="Buscar funcionário…">
@@ -1437,7 +1439,7 @@
           <div class="hint">Clique no nome do funcionário para abrir a ficha completa: ponto, pagamentos e privilégios.</div>
         </div>
         <div class="card">
-          <div class="section-title">Ponto de hoje · <span class="count" id="pontoHojeData">—</span></div>
+          <div class="section-title">Ponto de hoje · <span class="count" id="pontoHojeData">—</span> <span class="pill wait">demonstração</span></div>
           <div id="pontoHoje"></div>
           <div class="hint">O ponto de entrada e saída é registrado no login e no botão Sair, no topo da tela.</div>
         </div>
@@ -1906,9 +1908,33 @@
     const p = precos[moeda] || precos.BRL;
     return p.simbolo + ' ' + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:p.dec, maximumFractionDigits:p.dec});
   }
+  /* Número digitado do jeito brasileiro (QA BUG-02: '150.50' virava 15050).
+     A regra, em ordem:
+       - tem ponto E vírgula -> o ponto é separador de MILHAR e a vírgula é o DECIMAL ('3.000,00' = 3000);
+       - só vírgula          -> a vírgula é o DECIMAL ('400,00' = 400);
+       - só ponto            -> ponto com 1 ou 2 dígitos depois é DECIMAL ('150.50' = 150,50; '12.5' = 12,5);
+                                ponto com 3 dígitos depois é MILHAR ('1.200' = 1200; '1.234.567' = 1234567);
+       - sem separador       -> número puro ('150' = 150). */
+  function numeroBR(s){
+    let t = String(s==null ? '' : s).replace(/[^\d.,-]/g,'');
+    const negativo = t.indexOf('-') === 0;
+    t = t.replace(/-/g,'');
+    if(!t) return 0;
+    if(t.indexOf('.') >= 0 && t.indexOf(',') >= 0){
+      t = t.replace(/\./g,'').replace(/,(?=[^,]*$)/,'.');
+    } else if(t.indexOf(',') >= 0){
+      t = t.replace(/,(?=[^,]*$)/,'.');
+    } else if(t.indexOf('.') >= 0){
+      const ultimo = t.lastIndexOf('.');
+      const decimais = t.length - ultimo - 1;
+      t = decimais <= 2 ? t.slice(0,ultimo).replace(/\./g,'') + '.' + t.slice(ultimo+1) : t.replace(/\./g,'');
+    }
+    const n = parseFloat(t);
+    if(isNaN(n)) return 0;
+    return negativo ? -n : n;
+  }
   function parseNum(s){
-    s = String(s==null?'':s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
-    const n = parseFloat(s); return isNaN(n) ? 0 : n;
+    return numeroBR(s);
   }
   const screens = ['robo','agenda','pacientes','dinheiro','equipe','funcionario','whatsapp'];
   const titles = {
@@ -2073,6 +2099,7 @@
       const moeda = p.moeda || 'BRL';
       const total = itens.reduce((s,i)=> s + (Number(i.valor) || 0), 0);
       orcamentos[nome] = {
+        real: true,                       // veio da API: sem dado de exemplo na tela
         status: (Number(p.pago) || 0) >= total ? 'Aprovado' : 'Aguardando',
         itens: itens.map(i => ({proc:i.descricao, dente:i.dente || '—', valor:fmtMoeda(i.valor, i.moeda || moeda)})),
         subtotal: fmtMoeda(total, moeda), desconto: fmtMoeda(0, moeda), total: fmtMoeda(total, moeda)
@@ -2196,7 +2223,7 @@
     document.getElementById('prontInfo').textContent = (p && p.info) ? p.info : 'Ficha nova — completar cadastro';
     document.getElementById('prontIdioma').innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-globo"/></svg> Fala ' + (p && p.idioma === 'ES' ? 'espanhol' : 'português');
     const tel = document.getElementById('prontTel');
-    tel.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> ' + ((p && p.tel) ? p.tel : 'telefone não informado');
+    tel.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> ' + esc((p && p.tel) ? p.tel : 'telefone não informado');
     if(p && p.tel) tel.setAttribute('href','tel:' + p.tel.replace(/[^\d+]/g,''));
     atualizarSaldoFicha(name);
     renderOdontograma(name);
@@ -2282,9 +2309,9 @@
     if(!termo){ box.hidden = true; box.innerHTML = ''; campo.setAttribute('aria-expanded','false'); return; }
     const achados = Object.keys(patients).filter(n=>buscaPaciente(n, termo));
     box.innerHTML = achados.length
-      ? achados.map(n=>'<button type="button" class="res" role="option" data-ir="'+n+'">'
-          + '<span class="r-nome">'+n+'</span>'
-          + '<span class="r-meta">'+((patients[n].tel)||'')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+proximoDe(n)+' · '+resumoSaldo(n)+'</span></button>').join('')
+      ? achados.map(n=>'<button type="button" class="res" role="option" data-ir="'+esc(n)+'">'
+          + '<span class="r-nome">'+esc(n)+'</span>'
+          + '<span class="r-meta">'+esc((patients[n].tel)||'')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+esc(proximoDe(n))+' · '+esc(resumoSaldo(n))+'</span></button>').join('')
       : '<div class="busca-vazia">Nenhuma ficha com esse nome, CPF ou RUC. Use “Novo paciente”.</div>';
     box.hidden = false;
     campo.setAttribute('aria-expanded','true');
@@ -2365,21 +2392,21 @@
       row.dataset.evo = id;
       row.dataset.esp = e.esp;
       row.tabIndex = 0;
-      row.innerHTML = '<td><span class="chev"><svg class="ic" aria-hidden="true"><use href="#i-dir"/></svg></span></td><td>' + data + '</td><td>' + e.servico + '</td><td>' + e.prof + '</td><td><span class="pill">' + e.valor + '</span></td>';
+      row.innerHTML = '<td><span class="chev"><svg class="ic" aria-hidden="true"><use href="#i-dir"/></svg></span></td><td>' + esc(data) + '</td><td>' + esc(e.servico) + '</td><td>' + esc(e.prof) + '</td><td><span class="pill">' + esc(e.valor) + '</span></td>';
       const detail = document.createElement('tr');
       detail.className = 'evo-detail';
       detail.id = id;
       detail.innerHTML = '<td colspan="5"><div class="evo-box">'
-        + '<div class="ev-title"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg> Prontuário do dia — ' + data + '</div>'
+        + '<div class="ev-title"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg> Prontuário do dia — ' + esc(data) + '</div>'
         + '<div class="evo-fields">'
-        + '<div class="f"><span class="k">Procedimento</span><span class="v">' + e.servico + '</span></div>'
-        + '<div class="f"><span class="k">Profissional</span><span class="v">' + e.prof + '</span></div>'
-        + '<div class="f"><span class="k">Dentes envolvidos</span><span class="v">' + e.dentes + '</span></div>'
-        + '<div class="f"><span class="k">Materiais</span><span class="v">' + e.materiais + '</span></div>'
+        + '<div class="f"><span class="k">Procedimento</span><span class="v">' + esc(e.servico) + '</span></div>'
+        + '<div class="f"><span class="k">Profissional</span><span class="v">' + esc(e.prof) + '</span></div>'
+        + '<div class="f"><span class="k">Dentes envolvidos</span><span class="v">' + esc(e.dentes) + '</span></div>'
+        + '<div class="f"><span class="k">Materiais</span><span class="v">' + esc(e.materiais) + '</span></div>'
         + '</div>'
-        + '<div class="evo-notes"><b>Descrição:</b> ' + e.desc + '</div>'
-        + '<div class="evo-notes"><b>Observações:</b> ' + e.obs + '</div>'
-        + '<div class="evo-attach">' + e.anexos.map(a=>'<span class="chip"><svg class="ic" aria-hidden="true"><use href="#i-' + a[0] + '"/></svg> ' + a[1] + '</span>').join('') + '</div>'
+        + '<div class="evo-notes"><b>Descrição:</b> ' + esc(e.desc) + '</div>'
+        + '<div class="evo-notes"><b>Observações:</b> ' + esc(e.obs) + '</div>'
+        + '<div class="evo-attach">' + e.anexos.map(a=>'<span class="chip"><svg class="ic" aria-hidden="true"><use href="#i-' + esc(a[0]) + '"/></svg> ' + esc(a[1]) + '</span>').join('') + '</div>'
         + '</div></td></tr>';
       tb.appendChild(row); tb.appendChild(detail);
     });
@@ -2621,7 +2648,7 @@
     if(!termo){ box.hidden = true; box.innerHTML = ''; return; }
     const achados = Object.keys(patients).filter(n=>buscaPaciente(n, termo));
     box.innerHTML = achados.length
-      ? achados.map(n=>'<button type="button" class="res" role="option" data-escolher="'+n+'"><span class="r-nome">'+n+'</span><span class="r-meta">'+((patients[n].tel)||'sem telefone')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+resumoSaldo(n)+'</span></button>').join('')
+      ? achados.map(n=>'<button type="button" class="res" role="option" data-escolher="'+esc(n)+'"><span class="r-nome">'+esc(n)+'</span><span class="r-meta">'+esc((patients[n].tel)||'sem telefone')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+esc(resumoSaldo(n))+'</span></button>').join('')
       : '<div class="busca-vazia">Nenhuma ficha com esse nome. Use “criar ficha nova”.</div>';
     box.hidden = false;
   }
@@ -2905,10 +2932,11 @@
 
   // ===== Pagamentos / folha =====
   let pagAtual = null;
+  /* Valor em dinheiro digitado pela recepção: o 'R$' e os espaços caem fora e o resto
+     segue a mesma regra do numeroBR (então '150.50' é cento e cinquenta e cinquenta).
+     QA BUG-02: antes todo ponto era tratado como milhar e '150.50' virava 15050. */
   function parseValor(s){
-    s = String(s).replace(/R\$\s?/i,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
-    const n = parseFloat(s);
-    return isNaN(n) ? 0 : n;
+    return numeroBR(s);
   }
   function agora(){
     const d = new Date();
@@ -3254,40 +3282,29 @@
   renderRadioGrid('Ana Souza');
 
   // ===== Orçamentos por paciente =====
-  const orcamentos = {
-    'Ana Souza': {
-      status:'Aprovado',
-      itens:[
-        {proc:'Limpeza + profilaxia', dente:'—', valor:'R$ 250,00'},
-        {proc:'Restauração resina', dente:'26', valor:'R$ 400,00'},
-        {proc:'Clareamento (2 sessões)', dente:'—', valor:'R$ 600,00'}
-      ],
-      subtotal:'R$ 1.250,00', desconto:'- R$ 50,00', total:'R$ 1.200,00'
-    },
-    'João Pereira': {
-      status:'Em aberto',
-      itens:[{proc:'Restauração resina', dente:'26', valor:'R$ 400,00'}],
-      subtotal:'R$ 400,00', desconto:'—', total:'R$ 400,00'
-    },
-    'Carlos Oliveira': {
-      status:'Aprovado',
-      itens:[{proc:'Implante', dente:'36', valor:'R$ 3.500,00'}],
-      subtotal:'R$ 3.500,00', desconto:'- R$ 300,00', total:'R$ 3.200,00'
-    }
-  };
+  /* Sem dado de exemplo aqui: carregarFinanceiro() enche este mapa com o que veio de
+     GET /api/pacientes/<id>/financeiro (QA BUG-04: antes o orçamento da tela Dinheiro
+     era fixo e contradizia a ficha). */
+  const orcamentos = {};
 
   function renderOrcPacientes(filtro){
     const el = document.getElementById('orcPacientes');
     el.innerHTML = '';
     const q = (filtro || '').toLowerCase().trim();
-    Object.keys(orcamentos).forEach(nome=>{
+    // lista vem do banco (GET /api/pacientes); o detalhe aparece quando a ficha é aberta
+    const nomes = pacientesLista.length ? pacientesLista.map(r=>r.nome) : [];
+    el.innerHTML = nomes.length ? '' : '<div class="hint sem-margem">Nenhuma ficha carregada ainda.</div>';
+    nomes.forEach(nome=>{
       if(q && !nome.toLowerCase().includes(q)) return;
+      const p = patients[nome] || {};
       const o = orcamentos[nome];
+      const status = o && o.real ? o.status
+        : (!p.orcamento && !pendenteDe(p) ? 'Sem orçamento' : pendenteDe(p) > 0 ? 'Em aberto' : 'Quitado');
       const div = document.createElement('div');
       div.className = 'hist-item';
       div.style.cursor = 'pointer';
       div.dataset.pac = nome;
-      div.innerHTML = '<span class="tipo">' + nome + '</span><span class="pill ' + (o.status === 'Aprovado' ? '' : 'wait') + '">' + o.status + '</span><span class="val">' + resumoSaldo(nome) + '</span>';
+      div.innerHTML = '<span class="tipo">' + esc(nome) + '</span><span class="pill ' + (status === 'Quitado' ? '' : 'wait') + '">' + esc(status) + '</span><span class="val">' + esc(resumoSaldo(nome)) + '</span>';
       el.appendChild(div);
     });
   }
@@ -3296,7 +3313,7 @@
     const el = document.getElementById('orcDetalhe');
     const titulo = document.getElementById('orcTitulo');
     const o = orcamentos[nome];
-    if(!o){
+    if(!o || !o.real){
       titulo.textContent = 'Orçamento — selecione um paciente';
       el.innerHTML = '<div class="hint">Clique em um paciente para ver o orçamento.</div>';
       return;
@@ -3323,7 +3340,7 @@
   });
 
   renderOrcPacientes();
-  renderOrcDetalhe('Ana Souza');
+  renderOrcDetalhe(null);
 
   renderFeedbacks();
 
@@ -3366,6 +3383,8 @@
       document.getElementById('loginOverlay').classList.remove('open');
       toast('Bom dia, ' + usuarioLogado.nome + '! Ponto de entrada: ' + horaAgora());
       renderPontoHoje();
+      await carregarLancamentos();             // tela Dinheiro: extrato do banco (BUG-04)
+      await carregarCaixa();                   // caixa por moeda, hoje e total
       carregarPainelRobo();                    // painel do robô já vem com dados do banco
     }catch(erro){
       toast(erro && erro.rede ? 'Sem conexão com o servidor local — não deu para entrar'
@@ -3934,15 +3953,10 @@
   // ===== Receber: um só fluxo, três caixas, cotação do dia =====
   const cotacao = {usdBRL:5.55, brlGS:1320};
   let recebendoDe = 'Ana Souza';
-  const lancamentos = [
-    {dia:0, hora:'08:30', nome:'Ana Souza', desc:'Limpeza', forma:'Pix', valor:250, moeda:'BRL'},
-    {dia:0, hora:'09:40', nome:'João Pereira', desc:'Restauração', forma:'Cartão', valor:250, moeda:'BRL'},
-    {dia:0, hora:'11:00', nome:'Maria Lima', desc:'Retorno', forma:'Transferência', valor:150, moeda:'USD'},
-    {dia:0, hora:'12:15', nome:'Carlos Oliveira', desc:'Avaliação', forma:'Transferência', valor:450000, moeda:'GS'},
-    {dia:0, hora:'16:00', nome:'Fernanda Costa', desc:'Clareamento', forma:'Cheque', valor:800, moeda:'BRL'},
-    {dia:-1, hora:'10:20', nome:'Roberto Almeida', desc:'Avaliação inicial', forma:'Pix', valor:500, moeda:'BRL'},
-    {dia:-2, hora:'15:10', nome:'Ana Souza', desc:'Restauração', forma:'Transferência', valor:200000, moeda:'GS'}
-  ];
+  /* Recebimentos da tela Dinheiro: vêm do banco (GET /api/pagamentos) — a lista fixa
+     que existia aqui mostrava dinheiro que não estava no caixa (QA BUG-04). */
+  let lancamentos = [];        // [{id, nome, data, valor, moeda, forma, ...}]
+  let caixaMoedas = {};        // GET /api/caixa: {BRL:{total,hoje}, USD:.., GS:..}
 
   function atualizarCotacao(){
     const u = parseNum(document.getElementById('cotUSD').value);
@@ -4022,11 +4036,8 @@
         caixas.forEach(c=>{ creditado += deReais(emReais(c.valor, c.moeda), p.moeda || 'BRL'); });
         p.pago = (p.pago || 0) + creditado;
       }
-      caixas.forEach(c=>{
-        lancamentos.unshift({dia:0, hora:horaAgora(), nome:recebendoDe, desc:obs || 'Recebimento', forma:c.nome, valor:c.valor, moeda:c.moeda});
-      });
-      renderLancamentos();
-      renderCaixa();
+      await carregarLancamentos();          // a lista volta do banco (GET /api/pagamentos)
+      await carregarCaixa();                // caixa por moeda, hoje e total (GET /api/caixa)
       renderSaldos();
       renderOrcPacientes();
       renderAgenda();
@@ -4045,20 +4056,49 @@
     }
   });
 
-  // ===== Dinheiro: recebimentos e caixa por moeda =====
+  // ===== Dinheiro: recebimentos e caixa por moeda (dados do backend) =====
+  const rotuloMoeda = {BRL:'Real', USD:'Dólar', GS:'Guaraní'};
+
+  function quandoBR(dataHora){
+    const [dt, t] = String(dataHora || '').split(' ');
+    const [a, m, d] = (dt || '').split('-');
+    if(!a || !m || !d) return '—';
+    return d + '/' + m + ' · ' + (t || '').slice(0,5);
+  }
+
+  async function carregarLancamentos(){
+    try{
+      lancamentos = (await api('/api/pagamentos')) || [];
+    }catch(erro){
+      avisar(erro);
+      return;
+    }
+    renderLancamentos();
+  }
+
+  async function carregarCaixa(){
+    try{
+      const caixa = await api('/api/caixa');
+      caixaMoedas = (caixa && caixa.moedas) || {};
+    }catch(erro){
+      avisar(erro);
+      return;
+    }
+    renderCaixa();
+  }
+
   function renderLancamentos(){
     const q = (document.getElementById('finBusca').value || '').toLowerCase().trim();
-    const lista = lancamentos.filter(l=>!q || (l.nome + ' ' + l.desc + ' ' + l.forma + ' ' + dma(l.dia)).toLowerCase().indexOf(q) >= 0);
+    const lista = lancamentos.filter(l=>!q || (l.nome + ' ' + l.forma + ' ' + l.moeda + ' ' + quandoBR(l.data)).toLowerCase().indexOf(q) >= 0);
     document.getElementById('finTbody').innerHTML = lista.length
-      ? lista.map(l=>'<tr><td>' + dma(l.dia) + ' · ' + l.hora + '</td><td>' + l.nome + '</td><td>' + l.desc + '</td><td>' + l.forma + '</td><td class="mono"><span class="pill">' + fmtMoeda(l.valor, l.moeda) + '</span></td></tr>').join('')
+      ? lista.map(l=>'<tr><td>' + esc(quandoBR(l.data)) + '</td><td>' + esc(l.nome) + '</td><td>' + esc(l.forma || '—') + '</td><td>' + esc(rotuloMoeda[l.moeda] || l.moeda) + '</td><td class="mono"><span class="pill">' + fmtMoeda(l.valor, l.moeda) + '</span></td></tr>').join('')
       : '<tr><td colspan="5" class="muted">Nenhum recebimento no filtro.</td></tr>';
   }
   function renderCaixa(){
     ['BRL','USD','GS'].forEach(m=>{
-      const total = lancamentos.filter(l=>l.moeda === m).reduce((s,l)=>s + l.valor, 0);
-      const hoje = lancamentos.filter(l=>l.moeda === m && l.dia === 0).reduce((s,l)=>s + l.valor, 0);
-      document.getElementById('caixa' + m).textContent = fmtMoeda(total, m);
-      document.getElementById('caixa' + m + 'Hoje').textContent = 'recebido hoje: ' + fmtMoeda(hoje, m);
+      const c = caixaMoedas[m] || {total:0, hoje:0};
+      document.getElementById('caixa' + m).textContent = fmtMoeda(c.total, m);
+      document.getElementById('caixa' + m + 'Hoje').textContent = 'recebido hoje: ' + fmtMoeda(c.hoje, m);
     });
   }
   document.getElementById('finBusca').addEventListener('input', renderLancamentos);
@@ -4131,8 +4171,6 @@
   renderNovas();
   renderSaldos();
   renderProximas();
-  renderLancamentos();
-  renderCaixa();
   renderPontoHoje();
   abrirAba('resumo');
 
@@ -4145,6 +4183,9 @@
     await carregarPacientes();
     const nome = patients[pacienteAtual] ? pacienteAtual : (pacientesLista[0] && pacientesLista[0].nome);
     if(nome) await openPatient(nome, 'resumo');
+    await carregarLancamentos();       // tela Dinheiro: extrato e caixa do banco (BUG-04)
+    await carregarCaixa();
+    renderPontoHoje();
     document.getElementById('loginOverlay').classList.remove('open');
     document.getElementById('topAvatar').textContent = (usuarioDaSessao() || 'U').charAt(0).toUpperCase();
   }
@@ -4300,9 +4341,9 @@
 
   /* ferramentas fixas da barra: imprimir e recarregar os dados deste PC */
   document.getElementById('btnImprimirTopo')?.addEventListener('click', ()=>window.print());
-  document.getElementById('btnAtualizarTopo')?.addEventListener('click', ()=>{
+  document.getElementById('btnAtualizarTopo')?.addEventListener('click', async ()=>{
     renderAgenda(); renderProximas(); renderAlertas(); renderNovas(); renderSaldos();
-    renderLancamentos(); renderCaixa(); renderPontoHoje();
+    await carregarLancamentos(); await carregarCaixa(); renderPontoHoje();
     toast('Dados do dia recarregados deste PC');
   });
 
