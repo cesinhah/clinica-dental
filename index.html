@@ -1265,6 +1265,11 @@
           <div class="tab-panel card" id="tab-conversas" role="tabpanel" aria-labelledby="tabbtn-conversas" tabindex="0">
             <div class="section-title">Conversas com o paciente</div>
             <div id="prontConversas" style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;margin-bottom:8px"></div>
+            <div class="wa-input" style="border-top:none;padding:0">
+              <label class="sr-only" for="prontConversasEnvio">Escrever mensagem para o paciente</label>
+              <input type="text" id="prontConversasEnvio" placeholder="Escreva em nome da clínica — a mensagem fica na ficha do paciente…">
+              <button class="btn" id="prontConversasEnviar">Enviar <svg class="ic" aria-hidden="true"><use href="#i-enviar"/></svg></button>
+            </div>
             <div class="section-title">Feedbacks do paciente</div>
             <div id="feedbackPaciente"></div>
           </div>
@@ -1559,6 +1564,19 @@
 
       <div class="grid g2" style="margin-top:8px">
         <div class="card">
+          <div class="section-title">Aguardando a secretária · <span class="count" id="humanoCount">0</span></div>
+          <div id="humanoList"></div>
+          <div class="hint">Contatos que o robô passou para uma pessoa. “Assumir” devolve a conversa ao robô depois que a secretária responde.</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Últimas conversas <span class="count">todos os pacientes</span></div>
+          <div id="ultimasConversas" style="max-height:264px;overflow:auto"></div>
+          <div class="hint">Clique numa conversa para abrir a ficha do paciente na aba Conversas.</div>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-top:8px">
+        <div class="card">
           <div class="section-title">Regras ativas do robô</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <span class="chip neutro">Nunca agenda no dia seguinte (+2 dias)</span>
@@ -1597,6 +1615,13 @@
             </label>
           </div>
           <div class="hint sem-margem" id="perfilResumo">Perfil Padrão · 25 de 26 automações ligadas.</div>
+
+          <div class="config-group" style="margin-top:10px">
+            <div class="gtitle">Robô no WhatsApp — o que fica gravado no servidor</div>
+            <div class="config-row"><div><div class="lbl">Modo do robô</div><div class="desc">Automático responde sozinho; desligado fica calado</div></div><div class="ctl"><label class="sr-only" for="cfgModo">Modo do robô</label><select id="cfgModo"><option value="auto">Automático (fluxo + IA)</option><option value="desligado">Desligado</option></select></div></div>
+            <div class="config-row"><div><div class="lbl">Horário comercial</div><div class="desc">Início e fim do atendimento do robô</div></div><div class="ctl" style="display:flex;gap:6px"><label class="sr-only" for="cfgInicio">Início do horário comercial</label><input type="time" id="cfgInicio" value="08:00"><label class="sr-only" for="cfgFim">Fim do horário comercial</label><input type="time" id="cfgFim" value="18:00"></div></div>
+            <div class="config-row"><div><div class="lbl">Mensagem de boas-vindas</div><div class="desc">Primeira resposta ao novo contato</div></div><div class="ctl" style="display:flex;gap:6px;align-items:center"><label class="sr-only" for="cfgBoasVindas">Mensagem de boas-vindas</label><input type="text" id="cfgBoasVindas" value=""></div></div>
+          </div>
 
           <div class="actions" style="justify-content:flex-start;margin-top:7px">
             <button class="btn ghost" id="btnAvancado" aria-expanded="false" aria-controls="botAvancado">Mostrar ajustes avançados (26 interruptores)</button>
@@ -2148,6 +2173,7 @@
     });
     document.getElementById('topTitle').textContent = titles[screen];
     window.scrollTo({top:0,behavior:'smooth'});
+    if(screen === 'whatsapp' && token()) carregarPainelRobo();   // painel do robô recarrega ao entrar
   }
 
   document.querySelectorAll('.nav button').forEach(b=>{
@@ -2439,12 +2465,76 @@
       return '<tr><td>' + dma(x.dia) + '</td><td>' + x.desc + '</td><td>' + x.forma + '</td><td class="mono"><span class="pill">' + fmtMoeda(valor, moeda) + '</span></td><td><span class="quit" style="font-weight:600">Pago</span></td></tr>';
     }).join('');
   }
-  function renderConversasPaciente(nome){
-    const el = document.getElementById('prontConversas');
-    const chat = waChats[nome];
-    if(!chat){ el.innerHTML = '<div class="hint sem-margem">Nenhuma conversa registrada com este paciente.</div>'; return; }
-    el.innerHTML = chat.msgs.map(m=>'<div class="conversa-msg ' + (m.dir === 'in' ? 'in' : 'out') + '"><b>' + (m.dir === 'in' ? 'Paciente' : 'Robô') + ' (' + m.h + '):</b> ' + m.t + '</div>').join('');
+  /* Conversas: uma fonte só — GET /api/conversas. A API devolve tudo (todos os
+     pacientes, mais novo primeiro); quem separa por paciente é a tela. */
+  let conversasApi = [];
+
+  function nomeDoPacienteId(id){
+    const achado = pacientesLista.find(r => r.id === id);
+    return achado ? achado.nome : '';
   }
+  function conversasDoPaciente(id){
+    return conversasApi.filter(c => c.paciente_id === id);
+  }
+  function quandoConversa(data){
+    const bruto = String(data == null ? '' : data);
+    const dia = bruto.slice(0, 10).split('-').reverse().join('/');
+    const hora = bruto.slice(11, 16);
+    return (dia && dia !== '//' ? dia + ' ' : '') + hora;
+  }
+  function emOrdemDeConversa(lista){
+    return lista.slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+  }
+  function bolhasConversa(lista, quemFala){
+    if(!lista.length) return '<div class="hint sem-margem">Nenhuma conversa registrada com este paciente.</div>';
+    return emOrdemDeConversa(lista).map(c=>{
+      const recebida = c.direcao === 'recebida';
+      return '<div class="conversa-msg ' + (recebida ? 'in' : 'out') + '"><b>'
+        + (recebida ? 'Paciente' : esc(quemFala)) + ' (' + esc(quandoConversa(c.data)) + '):</b> '
+        + esc(c.texto) + '</div>';
+    }).join('');
+  }
+
+  async function renderConversasPaciente(nome){
+    const el = document.getElementById('prontConversas');
+    if(!el) return;
+    el.innerHTML = '<div class="hint sem-margem">Carregando conversas…</div>';
+    try{
+      conversasApi = (await api('/api/conversas')) || [];
+    }catch(erro){
+      el.innerHTML = '<div class="hint sem-margem">Não deu para carregar as conversas agora.</div>';
+      avisar(erro);
+      return;
+    }
+    const id = idDoPaciente(nome);
+    el.innerHTML = bolhasConversa(id ? conversasDoPaciente(id) : [], 'Recepção');
+  }
+
+  /* a secretária escreve pela ficha: grava no prontuário e o servidor tenta mandar */
+  async function enviarMensagemPaciente(){
+    const campo = document.getElementById('prontConversasEnvio');
+    const botao = document.getElementById('prontConversasEnviar');
+    const texto = (campo.value || '').trim();
+    const id = idDoPaciente(pacienteAtual);
+    if(!id){ toast('Abra a ficha de um paciente cadastrado para escrever.'); return; }
+    if(!texto){ toast('Escreva a mensagem antes de enviar.'); return; }
+    botao.disabled = true;
+    try{
+      const r = await api('/api/conversas', {metodo:'POST', corpo:{paciente_id:id, texto:texto}});
+      campo.value = '';
+      await renderConversasPaciente(pacienteAtual);
+      if(r && r.enviado) toast('Mensagem enviada pelo WhatsApp para ' + pacienteAtual + '.');
+      else toast('Mensagem guardada na ficha — não saiu pelo WhatsApp (' + ((r && r.motivo) || 'sem envio') + ').');
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
+  }
+  document.getElementById('prontConversasEnviar').addEventListener('click', enviarMensagemPaciente);
+  document.getElementById('prontConversasEnvio').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') enviarMensagemPaciente();
+  });
 
   // Dropdowns dinâmicos (área -> serviço -> local)
   const catalogo = {
@@ -3276,6 +3366,7 @@
       document.getElementById('loginOverlay').classList.remove('open');
       toast('Bom dia, ' + usuarioLogado.nome + '! Ponto de entrada: ' + horaAgora());
       renderPontoHoje();
+      carregarPainelRobo();                    // painel do robô já vem com dados do banco
     }catch(erro){
       toast(erro && erro.rede ? 'Sem conexão com o servidor local — não deu para entrar'
                               : ((erro && erro.message) || 'Não deu para entrar'));
@@ -3614,12 +3705,34 @@
     const input = document.getElementById('waInput');
     const txt = input.value.trim();
     if(!txt) return;
+    const id = idDoPaciente(waAtual);
+    if(id){
+      // paciente existe no banco: a mensagem vira conversa 'enviada' na ficha dele
+      enviarPeloPainel(id, txt, input);
+      return;
+    }
     if(!waChats[waAtual]){ toast('Nenhuma conversa registrada com ' + waAtual + ' — nada foi enviado'); return; }
     waChats[waAtual].msgs.push({dir:'out', t:txt, h:waAgora()});
     input.value = '';
     renderWaBody();
     renderWaList(document.getElementById('waSearch').value);
   });
+
+  async function enviarPeloPainel(id, texto, input){
+    const botao = document.getElementById('waSend');
+    botao.disabled = true;
+    try{
+      const r = await api('/api/conversas', {metodo:'POST', corpo:{paciente_id:id, texto:texto}});
+      if(input) input.value = '';
+      await carregarPainelRobo();
+      if(r && r.enviado) toast('Mensagem enviada pelo WhatsApp para ' + waAtual + '.');
+      else toast('Mensagem guardada na ficha de ' + waAtual + ' — não saiu pelo WhatsApp (' + ((r && r.motivo) || 'sem envio') + ').');
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
+  }
   document.getElementById('waInput').addEventListener('keydown', e=>{
     if(e.key==='Enter') document.getElementById('waSend').click();
   });
@@ -3681,14 +3794,137 @@
     document.getElementById('btnAvancado').setAttribute('aria-expanded','false');
     document.getElementById('btnAvancado').textContent = 'Mostrar ajustes avançados (26 interruptores)';
     aplicarPerfil('padrao');
+    carregarConfigBot();                       // GET /api/bot/config: o que está gravado de verdade
     abrirModal(document.getElementById('modalBotConfig'));
   });
   document.getElementById('btnBotCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalBotConfig')));
-  document.getElementById('btnBotSave').addEventListener('click', ()=>{
+  document.getElementById('btnBotSave').addEventListener('click', async ()=>{
     const perfil = [...document.querySelectorAll('input[name=botPerfil]')].find(r=>r.checked);
     const ligados = switchesBot().filter(s=>s.checked).length;
-    fecharModal(document.getElementById('modalBotConfig'));
-    toast('Configurações do robô salvas — ' + (perfil ? 'perfil ' + rotuloPerfil[perfil.value] : 'perfil personalizado') + ', ' + ligados + ' automações ligadas');
+    const botao = document.getElementById('btnBotSave');
+    const corpo = {
+      modo: (document.getElementById('cfgModo') || {}).value || 'auto',
+      boas_vindas: (document.getElementById('cfgBoasVindas') || {}).value || '',
+      horario: {
+        inicio: (document.getElementById('cfgInicio') || {}).value || '',
+        fim: (document.getElementById('cfgFim') || {}).value || '',
+        dias: (configBot && configBot.horario && configBot.horario.dias) || [0, 1, 2, 3, 4]
+      }
+    };
+    botao.disabled = true;
+    try{
+      const r = await api('/api/bot/config', {metodo:'PUT', corpo:corpo});
+      configBot = (r && r.config) || configBot;
+      fecharModal(document.getElementById('modalBotConfig'));
+      toast('Configurações salvas — robô em modo ' + (corpo.modo === 'desligado' ? 'desligado' : 'automático')
+        + ', atendimento das ' + corpo.horario.inicio + ' às ' + corpo.horario.fim
+        + (perfil ? ' (' + rotuloPerfil[perfil.value] + ', ' + ligados + ' automações ligadas)' : ''));
+    }catch(erro){
+      avisar(erro);                            // 503 de licença e 400 de campo torto caem aqui
+    }finally{
+      botao.disabled = false;
+    }
+  });
+
+  /* ===== Painel de conversas do robô: fila de humano + últimas conversas ===== */
+  let configBot = null;
+
+  async function carregarConfigBot(){
+    try{
+      configBot = await api('/api/bot/config');
+    }catch(erro){
+      avisar(erro);
+      return null;
+    }
+    if(!configBot) return null;
+    const modo = document.getElementById('cfgModo');
+    if(modo) modo.value = configBot.modo === 'desligado' ? 'desligado' : 'auto';
+    const boas = document.getElementById('cfgBoasVindas');
+    if(boas) boas.value = configBot.boas_vindas || '';
+    const horario = configBot.horario || {};
+    const inicio = document.getElementById('cfgInicio');
+    const fim = document.getElementById('cfgFim');
+    if(inicio && horario.inicio) inicio.value = horario.inicio;
+    if(fim && horario.fim) fim.value = horario.fim;
+    return configBot;
+  }
+
+  function renderHumano(){
+    const el = document.getElementById('humanoList');
+    const contador = document.getElementById('humanoCount');
+    if(!el) return;
+    const porPaciente = {};
+    conversasApi.forEach(c=>{
+      (porPaciente[c.paciente_id] = porPaciente[c.paciente_id] || []).push(c);
+    });
+    const fila = Object.keys(porPaciente)
+      .map(id=>({id:+id, msgs:emOrdemDeConversa(porPaciente[id])}))
+      .filter(g=>g.msgs.some(c=>c.aguardando_humano))
+      .sort((a, b)=> b.msgs[b.msgs.length-1].id - a.msgs[a.msgs.length-1].id);
+    if(contador) contador.textContent = fila.length;
+    if(!fila.length){
+      el.innerHTML = '<div class="hint sem-margem">Ninguém esperando — o robô está dando conta sozinho.</div>';
+      return;
+    }
+    el.innerHTML = fila.map(g=>{
+      const ultima = g.msgs[g.msgs.length-1];
+      const nome = ultima.paciente || nomeDoPacienteId(g.id) || ('Paciente ' + g.id);
+      return '<div class="config-row"><div><div class="lbl">' + esc(nome) + '</div>'
+        + '<div class="desc">' + esc(quandoConversa(ultima.data)) + ' · ' + esc(String(ultima.texto || '').slice(0, 70)) + '</div></div>'
+        + '<div class="ctl" style="display:flex;gap:6px"><button class="btn small ghost" type="button" data-ficha="' + esc(nome) + '">Abrir ficha</button>'
+        + '<button class="btn small" type="button" data-assumir="' + g.id + '">Assumir</button></div></div>';
+    }).join('');
+  }
+
+  function renderUltimasConversas(){
+    const el = document.getElementById('ultimasConversas');
+    if(!el) return;
+    const ultimas = conversasApi.slice(0, 12);
+    if(!ultimas.length){
+      el.innerHTML = '<div class="hint sem-margem">Nenhuma conversa registrada ainda.</div>';
+      return;
+    }
+    el.innerHTML = ultimas.map(c=>{
+      const nome = c.paciente || nomeDoPacienteId(c.paciente_id) || ('Paciente ' + c.paciente_id);
+      const recebida = c.direcao === 'recebida';
+      return '<div class="wa-chat-item" data-ficha="' + esc(nome) + '">'
+        + '<div class="wa-av">' + esc(String(nome).charAt(0).toUpperCase()) + '</div>'
+        + '<div><div class="wa-name">' + esc(nome)
+        + (c.aguardando_humano ? ' <span class="chip aguardando">humano</span>' : '') + '</div>'
+        + '<div class="wa-prev">' + (recebida ? 'recebido: ' : 'enviado: ') + esc(String(c.texto || '').slice(0, 50)) + '</div></div>'
+        + '<div class="wa-time">' + esc(quandoConversa(c.data)) + '</div></div>';
+    }).join('');
+  }
+
+  async function carregarPainelRobo(){
+    try{
+      conversasApi = (await api('/api/conversas')) || [];
+    }catch(erro){
+      avisar(erro);                            // 401 reabre o login; 503 avisa a licença
+      return;
+    }
+    renderHumano();
+    renderUltimasConversas();
+  }
+
+  document.getElementById('humanoList').addEventListener('click', async e=>{
+    const ficha = e.target.closest('[data-ficha]');
+    if(ficha){ openPatient(ficha.dataset.ficha, 'conversas'); return; }
+    const assumir = e.target.closest('[data-assumir]');
+    if(!assumir) return;
+    assumir.disabled = true;
+    try{
+      await api('/api/conversas/LIBERAR', {metodo:'POST', corpo:{paciente_id:+assumir.dataset.assumir}});
+      await carregarPainelRobo();
+      toast('Conversa assumida — o robô voltou a responder esse contato.');
+    }catch(erro){
+      assumir.disabled = false;
+      avisar(erro);
+    }
+  });
+  document.getElementById('ultimasConversas').addEventListener('click', e=>{
+    const item = e.target.closest('[data-ficha]');
+    if(item) openPatient(item.dataset.ficha, 'conversas');
   });
 
   renderWaList();
