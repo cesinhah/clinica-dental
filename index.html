@@ -744,6 +744,8 @@
     .perfis,.boxes,.pac-layout,.grid,.g2,.g3,.g4{max-width:100%}
     .ponto-item,.fin-item,.wa-msg{flex-wrap:wrap}
     .ponto-item .dt{min-width:0}
+    /* mobile: quadro "Alertas de retorno" esconde inteiro, com título (diagramação ruim em coluna estreita) */
+    #cardAlertas{display:none}
     .hist-item,.ponto-item,.fin-item{max-width:100%}
     .tabs{flex-wrap:wrap;overflow-x:visible}
     .appbar .app-pc,.appbar .app-sep{display:none}
@@ -1109,7 +1111,7 @@
           <div id="agendaSlots"></div>
           <div class="hint">Clique no cartão para abrir a ficha do paciente. Cada cartão traz telefone, idioma, valor e pendência, com as três ações do balcão.</div>
         </div>
-        <div class="card">
+        <div class="card" id="cardAlertas">
           <div class="section-title">Alertas de retorno</div>
           <div id="alertasRetorno"></div>
         </div>
