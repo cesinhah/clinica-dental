@@ -385,6 +385,17 @@
   /* FICHA DO PACIENTE */
   .pac-layout{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:8px;align-items:start}
   .pac-lista .hist-item{cursor:pointer}
+  /* LISTA DE PACIENTES: uma coluna só. O nome abre a ficha no clique; telefone, idioma,
+     próxima consulta e saldo ficaram na ficha (antes essa tabela de 5 colunas espremia os
+     títulos dentro dos 340px da coluna e, no celular, obrigava a rolar de lado). */
+  .pac-lista table{min-width:0}
+  .pac-lista td{padding:0}
+  .pac-nome{
+    display:block;width:100%;min-height:36px;padding:8px 12px;
+    background:none;border:none;font:inherit;font-size:13.5px;font-weight:700;
+    color:var(--text);text-align:left;cursor:pointer;
+  }
+  .pac-nome:hover{color:var(--clinic-dark);text-decoration:underline;text-underline-offset:2px}
   .ficha-head{
     display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:10px;
     padding:7px 11px;background:var(--panel-head);border:1px solid var(--border);border-radius:6px;
@@ -742,6 +753,11 @@
     .chip{white-space:normal;max-width:100%}
     .tw{max-width:100%}
     .perfis,.boxes,.pac-layout,.grid,.g2,.g3,.g4{max-width:100%}
+    /* Pacientes no celular: alvo de toque folgado — a lista de nomes é o caminho mais batido */
+    #screen-pacientes .fsearch,
+    #screen-pacientes .agenda-head .btn,
+    #screen-pacientes .ficha-head .btn{min-height:38px}
+    #screen-pacientes .pac-nome{min-height:44px}
     .ponto-item,.fin-item,.wa-msg{flex-wrap:wrap}
     .ponto-item .dt{min-width:0}
     /* mobile: quadro "Alertas de retorno" esconde inteiro, com título (diagramação ruim em coluna estreita) */
@@ -1135,13 +1151,13 @@
           <div class="section-title">Lista · <span class="count" id="pacCount">6</span></div>
           <div class="tw">
           <table>
-            <thead><tr><th>Nome</th><th>Telefone</th><th>Idioma</th><th>Próxima</th><th>Saldo</th></tr></thead>
+            <thead><tr><th>Paciente</th></tr></thead>
             <tbody id="pacTbody">
               <!-- as linhas vêm de GET /api/pacientes (renderListaPacientes) -->
             </tbody>
           </table>
           </div>
-          <div class="hint">A ficha abre ao lado, sem trocar de tela. CPF e RUC funcionam na busca.</div>
+          <div class="hint">Clique no nome para abrir a ficha — telefone, idioma, próxima consulta e saldo ficam lá. A busca aceita nome, telefone, CPF e RUC.</div>
         </div>
 
         <div class="pac-ficha" id="fichaPaciente" aria-live="polite">
@@ -2207,19 +2223,15 @@
       const p = patients[r.nome] || {};
       const doc = p.cpf || p.ruc || p.rg || '';
       const busca = (r.nome + ' ' + (r.tel || '') + ' ' + doc).toLowerCase();
+      /* A lista mostra só o nome: telefone, idioma, próxima consulta e saldo moram na ficha,
+         que abre no clique. O nome é um botão de verdade — o teclado chega nele. */
       return '<tr class="row" data-patient="' + esc(r.nome) + '" data-busca="' + esc(busca) + '" title="Abrir a ficha de ' + esc(r.nome) + '">'
-        + '<td><b>' + esc(r.nome) + '</b></td>'
-        + '<td class="muted">' + esc(r.tel || '—') + '</td>'
-        + '<td>' + (p.idioma === 'ES' ? 'ES' : 'PT') + '</td>'
-        + '<td data-prox="' + esc(r.nome) + '">—</td>'
-        + '<td class="saldo-cell" data-saldo="' + esc(r.nome) + '">—</td></tr>';
-    }).join('') || '<tr><td colspan="5" class="muted">Nenhuma ficha no banco ainda.</td></tr>';
+        + '<td><button type="button" class="pac-nome">' + esc(r.nome) + '</button></td></tr>';
+    }).join('') || '<tr><td class="muted">Nenhuma ficha no banco ainda.</td></tr>';
     const contador = document.getElementById('pacCount');
     if(contador) contador.textContent = pacientesLista.length;
     const selo = document.querySelector('.nav button[data-screen="pacientes"] .badge');
     if(selo) selo.textContent = pacientesLista.length;
-    renderSaldos();
-    renderProximas();
   }
 
   const pendenteDe = p => Math.max(0, (p && p.orcamento ? p.orcamento : 0) - (p && p.pago ? p.pago : 0));
@@ -2385,6 +2397,9 @@
     });
   });
 
+  /* As colunas "próxima consulta" e "saldo" saíram da lista de pacientes (a lista mostra só o
+     nome; os dois valores aparecem na ficha): estas duas funções ficam para quem renderizar
+     essas células — hoje elas não encontram nenhum nó e não fazem nada. */
   function renderSaldos(){
     document.querySelectorAll('.saldo-cell').forEach(td=>{
       const p = patients[td.dataset.saldo] || {};
