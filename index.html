@@ -749,6 +749,9 @@
     .brand .brand-txt,.nav button>span:not(.ico),.nav .badge,.nav-grupo,.side-foot{display:none}
     .nav button{justify-content:center;padding:7px 4px}
     .g2,.g3,.g4,.pac-layout,.boxes,.perfis,.evo-fields{grid-template-columns:minmax(0,1fr)}
+    /* tabelas não podem estourar a tela: sem largura mínima, células quebram linha */
+    table{min-width:0}
+    table th,table td{white-space:normal}
     /* nenhum conteúdo pode empurrar a página para os lados em 375px */
     .chip{white-space:normal;max-width:100%}
     .tw{max-width:100%}

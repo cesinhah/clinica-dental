@@ -31,188 +31,296 @@
     --clinic:#17506e;
     --clinic-dark:#123c53;
     --clinic-soft:#e7eff4;
-    --bg:#e9edf2;
+    --bg:#f2f2f7;
     --card:#ffffff;
-    --surface:#f6f8fa;
-    --border:#ccd4dd;
-    --border-soft:#e4e9ef;
-    --text:#0f172a;
-    --muted:#475569;
+    --surface:#eeeef3;
+    --border:#c9c9d0;
+    --sep:rgba(60,60,67,.20);
+    --text:#1c1c1e;
+    --muted:#4a4a52;
     --green:#15803d;
     --green-soft:#dcfce7;
-    --amber:#b45309;
-    --amber-soft:#fef3c7;
+    --amber:#8a4b06;
+    --amber-soft:#fdf0c8;
     --red:#b91c1c;
     --red-soft:#fee2e2;
     --wa:#1da851;
-    --shadow-card:0 1px 2px rgba(15,23,42,.06);
-    --veil:rgba(15,23,42,.5);
-    --topo-h:58px;
-    --abas-h:60px;
+    --sombra:0 1px 2px rgba(15,23,42,.05), 0 10px 26px -20px rgba(15,23,42,.45);
+    --topo-h:56px;
+    --abas-h:68px;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html{-webkit-text-size-adjust:100%}
   body{
-    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Tahoma,Roboto,Helvetica,Arial,sans-serif;
-    font-size:14px;
-    line-height:1.45;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:17px;
+    line-height:1.4;
     background:var(--bg);
     color:var(--text);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
   }
-  :focus-visible{outline:2px solid var(--clinic);outline-offset:2px}
+  :focus-visible{outline:3px solid var(--clinic);outline-offset:2px;border-radius:8px}
   .some{display:none !important}
 
-  /* ---------- topo fixo ---------- */
+  /* ---------- topo (barra fina, some atrás do conteúdo que rola) ---------- */
   .topo{
-    position:fixed;top:0;left:0;right:0;height:var(--topo-h);z-index:20;
-    display:flex;align-items:center;gap:10px;padding:0 12px;
-    background:linear-gradient(180deg,#1d5f86,var(--clinic));
-    color:#fff;
-    padding-top:env(safe-area-inset-top);
+    position:fixed;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:center;gap:10px;
+    min-height:calc(var(--topo-h) + env(safe-area-inset-top));
+    padding:env(safe-area-inset-top) 14px 0;
+    background:rgba(242,242,247,.86);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--sep);
   }
   .topo .txt{flex:1;min-width:0}
-  .topo .titulo{font-size:16px;font-weight:700;line-height:1.2}
-  .topo .sub{font-size:11.5px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topo .sub{font-size:16px;font-weight:500;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #btnAtualizar{
-    min-width:44px;min-height:44px;border:1px solid rgba(255,255,255,.45);
-    background:rgba(255,255,255,.12);color:#fff;border-radius:10px;
-    font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;
-    padding:0 12px;
+    min-height:44px;border:0;background:transparent;color:var(--clinic);
+    font-size:18px;font-weight:600;padding:0 6px;border-radius:10px;
   }
-  #btnAtualizar:active{background:rgba(255,255,255,.28)}
-  #btnAtualizar[disabled]{opacity:.6}
+  #btnAtualizar:active{opacity:.5}
+  #btnAtualizar[disabled]{opacity:.45}
 
-  /* ---------- aviso de rede / licença no topo do conteúdo ---------- */
+  /* ---------- aviso de rede / licença ---------- */
   #avisoRede{
-    margin:8px 10px 0;padding:9px 12px;border-radius:10px;font-size:12.5px;
-    background:var(--amber-soft);color:var(--amber);border:1px solid #fcd34d;
+    margin:0 16px 12px;padding:14px;border-radius:14px;font-size:16px;line-height:1.35;
+    background:var(--amber-soft);color:var(--amber);
   }
 
   /* ---------- conteúdo ---------- */
   main{
-    padding:calc(var(--topo-h) + env(safe-area-inset-top) + 8px) 0
-            calc(var(--abas-h) + env(safe-area-inset-bottom) + 12px);
+    padding:calc(var(--topo-h) + env(safe-area-inset-top) + 4px) 0
+            calc(var(--abas-h) + env(safe-area-inset-bottom) + 10px);
   }
-  .tela{display:none;padding:0 10px}
+  .titulo-grande{
+    font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1;
+    margin:14px 16px 16px;
+  }
+  .tela{display:none;padding:0 16px}
   .tela.ativa{display:block}
   .cartao{
-    background:var(--card);border:1px solid var(--border-soft);border-radius:12px;
-    box-shadow:var(--shadow-card);padding:12px;margin-bottom:10px;
+    background:var(--card);border-radius:18px;box-shadow:var(--sombra);
+    padding:4px 16px 6px;margin-bottom:14px;
   }
   .cartao > h2{
-    font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
-    font-weight:700;display:flex;align-items:baseline;gap:8px;margin-bottom:8px;
+    font-size:20px;font-weight:700;letter-spacing:-.01em;
+    display:flex;align-items:baseline;gap:10px;padding:14px 0 10px;
   }
-  .cartao > h2 .quando{margin-left:auto;font-size:11.5px;font-weight:600;text-transform:none;letter-spacing:0}
-  .vazio{color:var(--muted);font-size:13px;padding:10px 2px}
-  .erro{color:var(--red);font-size:12.5px;background:var(--red-soft);border-radius:8px;padding:8px 10px}
+  .cartao > h2 .quando{margin-left:auto;font-size:16px;font-weight:500;color:var(--muted)}
+  .vazio{color:var(--muted);font-size:17px;padding:12px 0 20px}
+  .erro{color:var(--red);font-size:16px;background:var(--red-soft);border-radius:12px;padding:14px}
 
   /* ---------- dinheiro ---------- */
   .moeda-linha{
-    display:flex;align-items:baseline;gap:10px;padding:7px 2px;
-    border-bottom:1px dashed var(--border-soft);
+    display:flex;align-items:center;gap:12px;min-height:62px;padding:12px 0;
+    border-bottom:1px solid var(--sep);
   }
   .moeda-linha:last-child{border-bottom:0}
-  .moeda-linha .nome{color:var(--muted);font-size:12.5px;min-width:78px}
-  .moeda-linha .valor{margin-left:auto;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .moeda-linha .nome{color:var(--muted);font-size:17px}
+  .moeda-linha .valor{
+    margin-left:auto;font-size:26px;font-weight:700;letter-spacing:-.01em;
+    font-variant-numeric:tabular-nums;
+  }
   .moeda-linha.zero .valor{color:var(--muted);font-weight:600}
   .recebido{
-    display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;
-    margin-top:8px;padding-top:9px;border-top:1px solid var(--border-soft);
+    display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;
+    padding:16px 0 14px;border-top:1px solid var(--sep);
   }
-  .recebido .rotulo{font-size:12.5px;color:var(--muted)}
-  .recebido .total{font-size:16px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;margin-left:auto}
-  .recebido .aviso{font-size:11.5px;color:var(--amber);flex-basis:100%}
+  .recebido .rotulo{font-size:17px;color:var(--muted)}
+  .recebido .total{
+    font-size:23px;font-weight:700;color:var(--green);
+    font-variant-numeric:tabular-nums;margin-left:auto;
+  }
+  .recebido .aviso{font-size:16px;color:var(--amber);flex-basis:100%}
 
   /* ---------- linhas de gente (agenda, pendência, conversa) ---------- */
   .linha{
-    display:flex;gap:10px;align-items:center;
-    padding:10px 2px;border-bottom:1px solid var(--border-soft);
+    display:flex;gap:12px;align-items:center;min-height:70px;padding:14px 0;
+    border-bottom:1px solid var(--sep);
   }
   .linha:last-child{border-bottom:0}
   .linha .info{flex:1;min-width:0}
-  .linha .quem{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
-  .linha .detalhe{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+  .linha .quem{
+    display:block;font-weight:600;font-size:21px;letter-spacing:-.01em;overflow-wrap:anywhere;
+    line-height:1.25;
+  }
+  .linha .detalhe{display:block;font-size:16px;color:var(--muted);overflow-wrap:anywhere;margin-top:3px}
   .linha .hora{
-    font-size:15px;font-weight:700;color:var(--clinic-dark);min-width:52px;
+    font-size:22px;font-weight:700;color:var(--clinic-dark);min-width:66px;
     font-variant-numeric:tabular-nums;
   }
-  .linha .deve{font-size:14px;font-weight:700;color:var(--red);text-align:right}
-  .linha .deve small{display:block;font-size:11px;font-weight:600;color:var(--muted)}
+  .linha .deve{font-size:20px;font-weight:700;color:var(--red);text-align:right;line-height:1.2}
+  .linha .deve small{display:block;font-size:15px;font-weight:600;color:var(--muted)}
   .btn-wa{
-    min-height:44px;min-width:44px;padding:0 12px;border-radius:10px;border:0;
-    background:var(--wa);color:#fff;font-weight:700;font-size:13px;
-    text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+    min-height:48px;padding:0 16px;border-radius:14px;border:0;
+    background:var(--wa);color:#fff;font-weight:600;font-size:17px;
+    text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap;
   }
-  .btn-wa.mudo{background:var(--surface);color:var(--muted);border:1px solid var(--border);font-weight:600}
+  .btn-wa:active{opacity:.7}
+  .btn-wa.mudo{background:var(--surface);color:var(--muted);font-weight:600;font-size:15px;padding:0 12px}
   .chip{
-    display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;
+    display:inline-block;font-size:14px;font-weight:600;padding:3px 10px;border-radius:999px;
     background:var(--clinic-soft);color:var(--clinic-dark);
   }
   .chip.espera{background:var(--amber-soft);color:var(--amber)}
   .chip.ok{background:var(--green-soft);color:var(--green)}
 
-  /* ---------- abas ---------- */
+  /* ---------- abas (barra de app no rodapé) ---------- */
   #abas{
     position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;
     height:calc(var(--abas-h) + env(safe-area-inset-bottom));
     padding-bottom:env(safe-area-inset-bottom);
-    background:var(--card);border-top:1px solid var(--border);
+    background:rgba(249,249,251,.9);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid var(--sep);
   }
   #abas button{
-    flex:1;position:relative;border:0;background:transparent;color:var(--muted);
-    font-size:12px;font-weight:700;min-height:44px;
+    flex:1;border:0;background:transparent;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    font-size:13px;font-weight:600;min-height:52px;padding:0;
   }
-  #abas button.ativa{color:var(--clinic);box-shadow:inset 0 2px 0 var(--clinic)}
+  #abas button .icone{
+    width:29px;height:29px;display:block;fill:none;stroke:currentColor;
+    stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;
+  }
+  #abas button.ativa{color:var(--clinic)}
+  #abas button.ativa .icone{stroke-width:2.4}
+  #abas button:active{opacity:.6}
   .badge{
     display:inline-block;min-width:19px;height:19px;line-height:19px;padding:0 5px;
-    border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700;
-    vertical-align:1px;margin-left:3px;
+    border-radius:999px;background:var(--red);color:#fff;font-size:12px;font-weight:700;
+    vertical-align:1px;margin-left:4px;text-align:center;
   }
   .badge.ambar{background:var(--amber)}
 
   /* ---------- rodapé (licença) ---------- */
   .rodape{
-    display:flex;align-items:center;gap:10px;padding:6px 12px 10px;
-    font-size:11.5px;color:var(--muted);
+    display:flex;align-items:center;gap:10px;margin:4px 16px 10px;padding:14px 16px;
+    background:var(--card);border-radius:18px;box-shadow:var(--sombra);
+    font-size:16px;color:var(--muted);
   }
-  .rodape .pino{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+  .rodape .pino{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
   .rodape.ok .pino{background:var(--green)}
   .rodape.ruim .pino{background:var(--red)}
   .rodape .texto{flex:1}
   #btnSair{
-    border:1px solid var(--border);background:var(--card);color:var(--muted);
-    border-radius:8px;font-size:12px;font-weight:600;min-height:34px;padding:0 10px;
+    border:0;background:transparent;color:var(--red);font-size:18px;font-weight:600;
+    min-height:44px;padding:0 4px;border-radius:10px;
   }
 
   /* ---------- login ---------- */
   #loginOverlay{
-    position:fixed;inset:0;z-index:40;background:var(--veil);
-    display:flex;align-items:center;justify-content:center;padding:18px;
+    position:fixed;inset:0;z-index:40;background:var(--bg);
+    display:flex;align-items:center;justify-content:center;padding:20px;
   }
   .login-cartao{
-    background:var(--card);border-radius:14px;width:100%;max-width:360px;
-    padding:20px 18px;box-shadow:0 14px 34px rgba(15,23,42,.3);
+    background:var(--card);border-radius:22px;width:100%;max-width:390px;
+    padding:28px 22px;box-shadow:0 24px 60px -24px rgba(15,23,42,.45);
   }
-  .login-cartao h1{font-size:18px;margin-bottom:2px;color:var(--clinic-dark)}
-  .login-cartao p{font-size:12.5px;color:var(--muted);margin-bottom:14px}
-  .campo{margin-bottom:12px}
-  .campo label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .login-cartao h1{font-size:27px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+  .login-cartao p{font-size:16px;color:var(--muted);margin-bottom:22px;line-height:1.35}
+  .campo{margin-bottom:16px}
+  .campo label{display:block;font-size:16px;font-weight:600;color:var(--muted);margin-bottom:6px}
   .campo input{
-    width:100%;min-height:46px;font-size:16px;padding:0 12px;border-radius:10px;
+    width:100%;min-height:54px;font-size:17px;padding:0 14px;border-radius:14px;
     border:1px solid var(--border);background:#fff;color:var(--text);
   }
-  #loginAviso{font-size:12.5px;color:var(--red);min-height:17px;margin-bottom:8px}
+  #loginAviso{font-size:16px;color:var(--red);min-height:20px;margin-bottom:10px}
   #btnLogin{
-    width:100%;min-height:48px;border:0;border-radius:10px;color:#fff;font-size:15px;
-    font-weight:700;background:linear-gradient(180deg,#1d5f86,var(--clinic));
+    width:100%;min-height:56px;border:0;border-radius:16px;color:#fff;font-size:19px;
+    font-weight:600;background:var(--clinic);
   }
+  #btnLogin:active{opacity:.85}
   #btnLogin[disabled]{opacity:.6}
-  .login-pe{font-size:11.5px;color:var(--muted);margin-top:12px;text-align:center}
-</style>
-</head>
+  .login-pe{font-size:15px;color:var(--muted);margin-top:18px;text-align:center}
+</style><body>
+
+<header class="topo">
+  <div class="txt">
+    <div class="sub" id="topoSub">Painel do dono</div>
+  </div>
+  <button type="button" id="btnAtualizar">Atualizar</button>
+</header>
+
+<div id="app" class="some">
+  <main>
+    <h1 class="titulo-grande" id="topoTitulo">Hoje</h1>
+    <div id="avisoRede" class="some"></div>
+
+    <!-- ============ HOJE ============ -->
+    <section class="tela ativa" id="tela-hoje">
+      <div class="cartao">
+        <h2>Caixa do dia <span class="quando" id="caixaDia"></span></h2>
+        <div id="caixaMoedas"></div>
+        <div class="recebido" id="recebidoDia"></div>
+      </div>
+      <div class="cartao">
+        <h2>Agenda de hoje <span class="quando" id="agendaQtd"></span></h2>
+        <div id="agendaLista"></div>
+      </div>
+    </section>
+
+    <!-- ============ PENDÊNCIAS ============ -->
+    <section class="tela" id="tela-pendencias">
+      <div class="cartao">
+        <h2>Quem ainda deve <span class="quando" id="pendQtd"></span></h2>
+        <div id="pendLista"></div>
+      </div>
+    </section>
+
+    <!-- ============ CONVERSAS ============ -->
+    <section class="tela" id="tela-conversas">
+      <div class="cartao">
+        <h2>Esperando atendente <span class="quando" id="convQtd"></span></h2>
+        <div id="convLista"></div>
+      </div>
+    </section>
+
+    <footer class="rodape" id="rodape">
+      <span class="pino"></span>
+      <span class="texto" id="licenca">verificando licença…</span>
+      <button type="button" id="btnSair">Sair</button>
+    </footer>
+  </main>
+</div>
+
+<nav id="abas" class="some">
+  <button type="button" data-tela="hoje" class="ativa">
+    <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.3 11.1 12 4.2l8.7 6.9"/><path d="M5.7 10.2v9.6h12.6v-9.6"/><path d="M10 19.8v-5h4v5"/></svg>
+    <span class="rotulo">Hoje</span>
+  </button>
+  <button type="button" data-tela="pendencias">
+    <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="18.4" height="11.4" rx="3"/><circle cx="12" cy="12" r="2.7"/><path d="M6.4 9.9v4.2M17.6 9.9v4.2"/></svg>
+    <span class="rotulo">Pendências<span class="badge some" id="badgePend">0</span></span>
+  </button>
+  <button type="button" data-tela="conversas">
+    <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 12.1c0 3.5-3.7 6.3-8.2 6.3-1 0-2-.2-2.9-.5l-5.3 2 1.4-3.3a6 6 0 0 1-2.4-4.5c0-3.5 3.7-6.3 8.2-6.3s9.2 2.8 9.2 6.3Z"/></svg>
+    <span class="rotulo">Conversas<span class="badge ambar some" id="badgeConv">0</span></span>
+  </button>
+</nav>
+
+<div id="loginOverlay">
+  <form class="login-cartao" id="formLogin">
+    <h1>Painel do dono</h1>
+    <p>Caixa do dia, pendências e conversas da clínica.</p>
+    <div class="campo">
+      <label for="loginUser">Usuário</label>
+      <input type="text" id="loginUser" autocomplete="username" autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="campo">
+      <label for="loginSenha">Senha</label>
+      <input type="password" id="loginSenha" autocomplete="current-password">
+    </div>
+    <div id="loginAviso"></div>
+    <button type="submit" id="btnLogin">Entrar</button>
+    <div class="login-pe" id="loginLicenca">—</div>
+  </form>
+</div>
+
 <body>
 
 <header class="topo">
@@ -482,7 +590,7 @@
     if(total.reais === null){
       html += '<span class="total">R$ —</span>'
         + '<span class="aviso">sem cotação de ' + esc(total.faltando.join(', '))
-        + ' — total não somado (nada de somar 1:1 às cegas)</span>';
+        + ' — total não somado</span>';
     }else{
       html += '<span class="total">' + esc(fmtMoeda(total.reais, 'BRL')) + '</span>';
     }
@@ -586,7 +694,6 @@
     el('app').classList.remove('some');
     el('abas').classList.remove('some');
     el('loginAviso').textContent = '';
-    el('topoSub').textContent = (usuario || usuarioDaSessao() || 'dono') + ' · ' + dataLonga(isoDia(0));
   }
 
   function trocarTela(nome){
@@ -748,7 +855,6 @@
   });
 
   (async function abrir(){
-    el('topoSub').textContent = dataLonga(isoDia(0));
     await carregarLicenca().catch(() => {});
     if(!token()){ pedirLogin(''); return; }
     entrarNaTela(usuarioDaSessao());
