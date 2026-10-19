@@ -2488,6 +2488,9 @@
       '.mk-sub{color:#8b95a5;font-size:12px}',
       '.mk-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}',
       '.mk-kpi{background:#141a23;border:1px solid #232b38;border-radius:10px;padding:10px 12px}',
+      '.mk-kpi-click{cursor:pointer;position:relative;transition:border-color .15s,background .15s}',
+      '.mk-kpi-click:hover{border-color:#3d5a86;background:#182131}',
+      '.mk-seta{position:absolute;right:10px;top:8px;color:#5f7ea8;font-size:16px;line-height:1}',
       '.mk-kpi .lab{color:#8b95a5;font-size:11px;text-transform:uppercase;letter-spacing:.04em}',
       '.mk-kpi .val{font-size:19px;font-weight:600;margin-top:2px}',
       '.mk-kpi .foot{color:#7d8798;font-size:11px;margin-top:2px}',
@@ -2588,29 +2591,80 @@
     var corpoFin = secFin.querySelector("#mkCorpo-fin");
     corpoFin.innerHTML =
       '<div class="mk-kpis" id="mkFinKpis"></div>'+
+      '<div class="mk-note" style="margin:-2px 0 12px">Clique num <b>caixa</b> para ver só a movimentação daquela moeda · clique em <b>A receber</b> para ver quem deve.</div>'+
       '<div class="mk-seg" id="mkFinSeg">'+
         '<button data-f="mov" class="on">Movimento do caixa</button>'+
         '<button data-f="dev">Quem deve</button>'+
         '<button data-f="conta">Conta do paciente</button>'+
       '</div><div id="mkFinPanel"></div>';
 
+    var MOEDA_NOME = {BRL:"real", USD:"dólar", GS:"guaraní"};
+
+    function hojeCurto(){
+      var h = new Date();
+      return ("0"+h.getDate()).slice(-2)+"/"+("0"+(h.getMonth()+1)).slice(-2);
+    }
+    function horaCurta(){
+      var h = new Date();
+      return ("0"+h.getHours()).slice(-2)+":"+("0"+h.getMinutes()).slice(-2);
+    }
+
     function kpisFin(){
       var s={BRL:0,USD:0,GS:0};
       MOV.forEach(function(m){
         if(m.tipo==="entrada") s[m.moeda]+=m.v; else s[m.moeda]-=m.v;
       });
-      var aberto=0, qtd=0;
-      PAC.forEach(function(p){ var t=saldoTotal(p); if(t>0.01){ aberto+=t; qtd++; } });
+      var aberto={BRL:0,USD:0,GS:0}, qtd=0;
+      PAC.forEach(function(p){
+        var algum=false;
+        ["BRL","USD","GS"].forEach(function(mo){
+          var v = Number(p.saldo[mo]) || 0;
+          if(v>0.01){ aberto[mo]+=v; algum=true; }
+        });
+        if(algum) qtd++;
+      });
+      var total = fmt.m(aberto.BRL,"BRL");
       var k=document.getElementById("mkFinKpis"); if(!k) return;
-      k.innerHTML =
-        '<div class="mk-kpi"><div class="lab">Caixa em real</div><div class="val">'+fmt.m(s.BRL,"BRL")+'</div><div class="foot">entradas − saídas</div></div>'+
-        '<div class="mk-kpi"><div class="lab">Caixa em dólar</div><div class="val">'+fmt.m(s.USD,"USD")+'</div><div class="foot">US$ 1 = R$ '+(CFG.cotUSD+"").replace(".",",")+'</div></div>'+
-        '<div class="mk-kpi"><div class="lab">Caixa em guaraní</div><div class="val">'+fmt.m(s.GS,"GS")+'</div><div class="foot">R$ 1 = Gs '+CFG.cotGS+'</div></div>'+
-        '<div class="mk-kpi"><div class="lab">A receber (pendente)</div><div class="val">'+fmt.brl(aberto)+'</div><div class="foot">'+qtd+' pacientes em aberto</div></div>';
+      var cards = [
+        ["BRL","Caixa em real",      fmt.m(s.BRL,"BRL"), "clique para ver o movimento do real"],
+        ["USD","Caixa em dólar",     fmt.m(s.USD,"USD"), "US$ 1 = R$ "+(CFG.cotUSD+"").replace(".",",")],
+        ["GS", "Caixa em guaraní",   fmt.m(s.GS,"GS"),   "R$ 1 = Gs "+CFG.cotGS],
+        ["dev","A receber (pendente)", total,            qtd+" pacientes devendo · clique para ver a lista"]
+      ];
+      k.innerHTML = cards.map(function(c){
+        return '<div class="mk-kpi mk-kpi-click" data-kpi="'+c[0]+'">'+
+          '<div class="lab">'+c[1]+'</div><div class="val">'+c[2]+'</div>'+
+          '<div class="foot">'+c[3]+'</div><div class="mk-seta">›</div></div>';
+      }).join("");
+      k.querySelectorAll("[data-kpi]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var alvo = b.getAttribute("data-kpi");
+          document.querySelectorAll("#mkFinSeg button").forEach(function(x){ x.classList.remove("on"); });
+          if(alvo==="dev"){
+            document.querySelector('#mkFinSeg button[data-f="dev"]').classList.add("on");
+            painelFin("dev");
+          } else {
+            document.querySelector('#mkFinSeg button[data-f="mov"]').classList.add("on");
+            painelFin("moeda", alvo);
+          }
+          document.getElementById("mkFinPanel").scrollIntoView({behavior:"smooth", block:"nearest"});
+        });
+      });
     }
 
-    function painelFin(qual){
+    function saldoDaMoeda(mo){
+      var s = 0;
+      MOV.forEach(function(m){
+        if(m.moeda!==mo) return;
+        s += (m.tipo==="entrada" ? m.v : -m.v);
+      });
+      return s;
+    }
+
+    function painelFin(qual, arg){
       var box = document.getElementById("mkFinPanel"); if(!box) return;
+
+      /* ---- movimento (todas as moedas) ---- */
       if(qual==="mov"){
         var s={BRL:0,USD:0,GS:0};
         var linhas = MOV.map(function(m){
@@ -2623,21 +2677,78 @@
         }).join("");
         box.innerHTML='<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Quando</th><th>Descrição</th><th>Moeda</th><th class="num">Entrou / saiu</th><th class="num">Saldo da moeda</th></tr></thead><tbody>'+linhas+'</tbody></table></div></div>'+
           '<div class="mk-note">Saldo corrente por moeda: somar tudo num número só esconde dinheiro.</div>';
+        return;
       }
+
+      /* ---- movimento de UMA moeda ---- */
+      if(qual==="moeda"){
+        var mo = arg || "BRL";
+        var saldo = 0, entrou = 0, saiu = 0, qtdEnt = 0;
+        var corpo = MOV.filter(function(m){ return m.moeda===mo; }).map(function(m){
+          var mov = (m.tipo==="entrada" ? m.v : -m.v);
+          saldo += mov;
+          if(m.tipo==="entrada"){ entrou += m.v; qtdEnt++; } else { saiu += Math.abs(m.v); }
+          var sinal = m.tipo==="entrada" ? "+" : "−";
+          var cor   = m.tipo==="entrada" ? "#9be3b0" : "#ffb4b4";
+          return '<tr><td>'+m.d+' '+m.h+'</td><td>'+m.desc+'</td>'+
+                 '<td class="num" style="color:'+cor+'">'+sinal+' '+fmt.m(Math.abs(m.v),mo)+'</td>'+
+                 '<td class="num">'+fmt.m(saldo,mo)+'</td></tr>';
+        }).join("");
+        box.innerHTML =
+          '<div class="mk-head" style="margin-bottom:8px">'+
+            '<h3 style="margin:0;font-size:15px">Movimento em '+MOEDA_NOME[mo]+'</h3>'+
+            '<span style="flex:1"></span>'+
+            '<button class="mk-btn" id="mkFinTodas">Ver todas as moedas</button>'+
+          '</div>'+
+          '<div class="mk-kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">'+
+            '<div class="mk-kpi"><div class="lab">Saldo em '+MOEDA_NOME[mo]+'</div><div class="val">'+fmt.m(saldo,mo)+'</div><div class="foot">'+qtdEnt+' entradas</div></div>'+
+            '<div class="mk-kpi"><div class="lab">Entrou</div><div class="val" style="color:#9be3b0">'+fmt.m(entrou,mo)+'</div><div class="foot">recebimentos</div></div>'+
+            '<div class="mk-kpi"><div class="lab">Saiu</div><div class="val" style="color:#ffb4b4">'+fmt.m(saiu,mo)+'</div><div class="foot">despesas</div></div>'+
+          '</div>'+
+          '<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Quando</th><th>Descrição</th><th class="num">Valor</th><th class="num">Saldo</th></tr></thead><tbody>'+
+          (corpo || '<tr><td colspan="4" class="mk-sub">Nenhum movimento nessa moeda.</td></tr>')+
+          '</tbody></table></div></div>';
+        document.getElementById("mkFinTodas").addEventListener("click", function(){
+          document.querySelectorAll("#mkFinSeg button").forEach(function(x){ x.classList.remove("on"); });
+          document.querySelector('#mkFinSeg button[data-f="mov"]').classList.add("on");
+          painelFin("mov");
+        });
+        return;
+      }
+
+      /* ---- quem deve ---- */
       if(qual==="dev"){
         var dev = PAC.filter(function(p){ return saldoTotal(p) > 0.01; });
-        box.innerHTML='<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Paciente</th><th>Telefone</th><th>Último atendimento</th><th>Dívida desde</th><th>Deve</th><th></th></tr></thead><tbody>'+
+        box.innerHTML =
+          '<div class="mk-note" style="margin-bottom:8px">Clique no nome para abrir o histórico financeiro · “Receber” quita (total ou parte) · “+ dívida” aumenta o que ele deve.</div>'+
+          '<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Paciente</th><th>Telefone</th><th>Último atendimento</th><th>Dívida desde</th><th class="num">Deve</th><th class="num">Ações</th></tr></thead><tbody>'+
           dev.map(function(p){
             var dias = 12 + p.n.length*3;
             var cls = dias>45?"dev":dias>20?"ur":"ok";
-            return '<tr><td>'+p.n+'</td><td>'+p.tel+'</td><td>'+p.ult+'</td><td>'+dias+' dias</td>'+
-              '<td><span class="mk-pill '+cls+'">'+saldoTexto(p)+'</span></td>'+
-              '<td class="num"><button class="mk-mini" data-receber="'+p.n+'">Receber</button></td></tr>';
+            return '<tr><td><a href="#" data-verfin="'+p.n+'" style="color:#7fb3ff;text-decoration:none">'+p.n+'</a></td>'+
+              '<td>'+p.tel+'</td><td>'+p.ult+'</td><td>'+dias+' dias</td>'+
+              '<td class="num"><span class="mk-pill '+cls+'">'+saldoTexto(p)+'</span></td>'+
+              '<td class="num"><button class="mk-mini" data-receber="'+p.n+'">Receber</button> '+
+              '<button class="mk-mini" data-maisdivida="'+p.n+'">+ dívida</button></td></tr>';
           }).join("")+'</tbody></table></div></div>';
-        box.querySelectorAll("[data-receber]").forEach(function(b){
-          b.addEventListener("click", function(){ pagar(b.getAttribute("data-receber")); });
+        box.querySelectorAll("[data-verfin]").forEach(function(a){
+          a.addEventListener("click", function(ev){
+            ev.preventDefault();
+            document.querySelectorAll("#mkFinSeg button").forEach(function(x){ x.classList.remove("on"); });
+            document.querySelector('#mkFinSeg button[data-f="conta"]').classList.add("on");
+            painelFin("conta", a.getAttribute("data-verfin"));
+          });
         });
+        box.querySelectorAll("[data-receber]").forEach(function(b){
+          b.addEventListener("click", function(){ abrirReceber(b.getAttribute("data-receber")); });
+        });
+        box.querySelectorAll("[data-maisdivida]").forEach(function(b){
+          b.addEventListener("click", function(){ abrirMaisDivida(b.getAttribute("data-maisdivida")); });
+        });
+        return;
       }
+
+      /* ---- conta do paciente ---- */
       if(qual==="conta"){
         box.innerHTML =
           '<div class="card" style="padding:12px">'+
@@ -2651,54 +2762,174 @@
               '<label class="mk-field"><span>Guaranis</span><input id="mkPgGS" type="number" step="1" value="0"></label>'+
               '<div class="mk-field" style="justify-content:flex-end"><button class="mk-btn primary" id="mkPgBtn">Receber</button></div>'+
             '</div>'+
+            '<div class="mk-row" style="gap:8px;margin-top:6px">'+
+              '<button class="mk-btn" id="mkContaMais">+ aumentar dívida</button>'+
+              '<button class="mk-btn" id="mkContaQuita">quitar tudo</button>'+
+            '</div>'+
             '<div class="mk-note">Um pagamento pode ter as três moedas ao mesmo tempo. Cada uma abate o saldo daquela moeda; o que faltar continua devido.</div>'+
             '<div id="mkContaHist" style="margin-top:12px"></div>'+
           '</div>';
         var sel = document.getElementById("mkContaSel");
+        if(arg) sel.value = arg;
+
+        function historicoPac(p){
+          var h = (p.hist || []).slice();
+          if(!h.length){
+            MOV.forEach(function(m){
+              if(m.desc.indexOf(p.n)===0) h.push({d:m.d, desc:m.desc, moeda:m.moeda, v:m.v, tipo:m.tipo});
+            });
+          }
+          return h;
+        }
+
         function pintaConta(){
           var p = PAC.filter(function(x){ return x.n===sel.value; })[0];
           document.getElementById("mkContaSaldo").textContent = saldoTexto(p);
-          var hist = MOV.filter(function(m){ return m.desc.indexOf(p.n)===0; });
+          var hist = historicoPac(p);
           document.getElementById("mkContaHist").innerHTML = hist.length
             ? '<div class="tw"><table class="mk"><thead><tr><th>Data</th><th>Histórico</th><th>Moeda</th><th class="num">Valor</th></tr></thead><tbody>'+
-              hist.map(function(m){ return '<tr><td>'+m.d+'</td><td>'+m.desc+'</td><td>'+m.moeda+'</td><td class="num">'+fmt.m(m.v,m.moeda)+'</td></tr>'; }).join("")+
-              '</tbody></table></div>'
-            : '<div class="mk-sub">Nenhum pagamento registrado para este paciente.</div>';
+              hist.map(function(m){
+                var cobranca = (m.tipo==="cobranca");
+                return '<tr><td>'+(m.d||"—")+'</td><td>'+m.desc+'</td><td>'+m.moeda+'</td>'+
+                  '<td class="num" style="color:'+(cobranca?"#ffb4b4":"#9be3b0")+'">'+(cobranca?"+ ":"− ")+fmt.m(Math.abs(m.v),m.moeda)+'</td></tr>';
+              }).join("")+'</tbody></table></div>'
+            : '<div class="mk-sub">Nenhum lançamento registrado para este paciente.</div>';
         }
         sel.addEventListener("change", pintaConta); pintaConta();
+
         document.getElementById("mkPgBtn").addEventListener("click", function(){
           var p = PAC.filter(function(x){ return x.n===sel.value; })[0];
           var b = parseFloat(document.getElementById("mkPgBRL").value)||0;
           var u = parseFloat(document.getElementById("mkPgUSD").value)||0;
           var g = parseFloat(document.getElementById("mkPgGS").value)||0;
           if(!b && !u && !g) return;
-          var h = new Date();
-          var dd = ("0"+h.getDate()).slice(-2)+"/"+("0"+(h.getMonth()+1)).slice(-2);
-          var hh = ("0"+h.getHours()).slice(-2)+":"+("0"+h.getMinutes()).slice(-2);
+          p.hist = p.hist || [];
           [["BRL",b],["USD",u],["GS",g]].forEach(function(par){
             if(par[1] > 0){
               p.saldo[par[0]] = Math.max(0,(p.saldo[par[0]]||0) - par[1]);
-              MOV.unshift({d:dd,h:hh,tipo:"entrada",desc:p.n+" · pagamento",moeda:par[0],v:par[1]});
+              MOV.unshift({d:hojeCurto(),h:horaCurta(),tipo:"entrada",desc:p.n+" · pagamento",moeda:par[0],v:par[1]});
+              p.hist.unshift({d:hojeCurto(),desc:"pagamento",moeda:par[0],v:par[1],tipo:"entrada"});
             }
           });
+          document.getElementById("mkPgBRL").value = 0;
+          document.getElementById("mkPgUSD").value = 0;
+          document.getElementById("mkPgGS").value = 0;
           kpisFin(); pintaConta(); renderPac();
           try{ toast("Pagamento registrado — dívida abatida"); }catch(e){}
         });
+        document.getElementById("mkContaQuita").addEventListener("click", function(){
+          pagar(sel.value);
+          pintaConta();
+        });
+        document.getElementById("mkContaMais").addEventListener("click", function(){
+          abrirMaisDivida(sel.value);
+        });
+        return;
       }
+    }
+
+    /* ---------- janelas de receber / aumentar dívida ---------- */
+    function mkJanela(id, titulo){
+      var m = document.getElementById(id);
+      if(!m){
+        m = el("div","mk-modal"); m.id = id;
+        m.innerHTML = '<div class="mk-panel" style="max-width:520px"></div>';
+        document.body.appendChild(m);
+        m.addEventListener("click", function(ev){ if(ev.target===m) m.classList.remove("on"); });
+      }
+      var p = m.querySelector(".mk-panel");
+      p.innerHTML = '<h3>'+titulo+'</h3><div id="'+id+'-corpo"></div>';
+      m.classList.add("on");
+      return document.getElementById(id+"-corpo");
+    }
+
+    function abrirReceber(nome){
+      var p = PAC.filter(function(x){ return x.n===nome; })[0]; if(!p) return;
+      var corpo = mkJanela("mkJanReceber","Receber de "+nome);
+      corpo.innerHTML =
+        '<div class="mk-sub" style="margin-bottom:8px">Deve agora: <b>'+saldoTexto(p)+'</b></div>'+
+        '<div class="mk-grid" style="grid-template-columns:1fr 1fr">'+
+          '<label class="mk-field"><span>Reais</span><input id="mkRcBRL" type="number" step="0.01" value="'+((p.saldo.BRL||0).toFixed(2))+'"></label>'+
+          '<label class="mk-field"><span>Dólares</span><input id="mkRcUSD" type="number" step="0.01" value="'+((p.saldo.USD||0).toFixed(2))+'"></label>'+
+          '<label class="mk-field"><span>Guaranis</span><input id="mkRcGS" type="number" step="1" value="'+(p.saldo.GS||0)+'"></label>'+
+          '<label class="mk-field"><span>Forma</span><select id="mkRcForma"><option>Pix</option><option>Dinheiro</option><option>Cartão</option><option>Transferência</option></select></label>'+
+        '</div>'+
+        '<div class="mk-note">Vem preenchido com a dívida toda — apague o que o paciente não está pagando agora.</div>'+
+        '<div class="mk-row" style="justify-content:flex-end;gap:8px;margin-top:8px">'+
+          '<button class="mk-btn" id="mkRcCancela">Cancelar</button>'+
+          '<button class="mk-btn primary" id="mkRcOk">Registrar recebimento</button>'+
+        '</div>';
+      document.getElementById("mkRcCancela").addEventListener("click", function(){
+        document.getElementById("mkJanReceber").classList.remove("on");
+      });
+      document.getElementById("mkRcOk").addEventListener("click", function(){
+        var forma = document.getElementById("mkRcForma").value;
+        var vals = [["BRL",parseFloat(document.getElementById("mkRcBRL").value)||0],
+                    ["USD",parseFloat(document.getElementById("mkRcUSD").value)||0],
+                    ["GS", parseFloat(document.getElementById("mkRcGS").value)||0]];
+        p.hist = p.hist || [];
+        vals.forEach(function(par){
+          if(par[1] > 0){
+            p.saldo[par[0]] = Math.max(0,(p.saldo[par[0]]||0) - par[1]);
+            MOV.unshift({d:hojeCurto(),h:horaCurta(),tipo:"entrada",desc:p.n+" · "+forma,moeda:par[0],v:par[1]});
+            p.hist.unshift({d:hojeCurto(),desc:"recebimento ("+forma+")",moeda:par[0],v:par[1],tipo:"entrada"});
+          }
+        });
+        document.getElementById("mkJanReceber").classList.remove("on");
+        kpisFin(); renderPac();
+        var seg = document.querySelector("#mkFinSeg button.on");
+        painelFin(seg ? seg.getAttribute("data-f") : "dev");
+        try{ toast("Recebimento lançado"); }catch(e){}
+      });
+    }
+
+    function abrirMaisDivida(nome){
+      var p = PAC.filter(function(x){ return x.n===nome; })[0]; if(!p) return;
+      var corpo = mkJanela("mkJanDivida","Aumentar dívida de "+nome);
+      corpo.innerHTML =
+        '<div class="mk-sub" style="margin-bottom:8px">Deve agora: <b>'+saldoTexto(p)+'</b></div>'+
+        '<div class="mk-grid" style="grid-template-columns:1fr 1fr">'+
+          '<label class="mk-field"><span>Moeda</span><select id="mkDvMoeda"><option value="BRL">Real</option><option value="USD">Dólar</option><option value="GS">Guaraní</option></select></label>'+
+          '<label class="mk-field"><span>Valor</span><input id="mkDvValor" type="number" step="0.01" placeholder="0,00"></label>'+
+        '</div>'+
+        '<label class="mk-field" style="margin-top:8px"><span>Motivo</span><input id="mkDvMotivo" placeholder="ex.: implante 36, coroa, ajuste"></label>'+
+        '<div class="mk-note">Entra como nova cobrança na conta do paciente — não mexe no caixa, porque não entrou dinheiro.</div>'+
+        '<div class="mk-row" style="justify-content:flex-end;gap:8px;margin-top:8px">'+
+          '<button class="mk-btn" id="mkDvCancela">Cancelar</button>'+
+          '<button class="mk-btn primary" id="mkDvOk">Lançar dívida</button>'+
+        '</div>';
+      document.getElementById("mkDvCancela").addEventListener("click", function(){
+        document.getElementById("mkJanDivida").classList.remove("on");
+      });
+      document.getElementById("mkDvOk").addEventListener("click", function(){
+        var mo = document.getElementById("mkDvMoeda").value;
+        var v = parseFloat(document.getElementById("mkDvValor").value)||0;
+        var motivo = document.getElementById("mkDvMotivo").value || "nova cobrança";
+        if(v<=0) return;
+        p.saldo[mo] = (p.saldo[mo]||0) + v;
+        p.hist = p.hist || [];
+        p.hist.unshift({d:hojeCurto(),desc:motivo,moeda:mo,v:v,tipo:"cobranca"});
+        document.getElementById("mkJanDivida").classList.remove("on");
+        kpisFin(); renderPac();
+        var seg = document.querySelector("#mkFinSeg button.on");
+        painelFin(seg ? seg.getAttribute("data-f") : "dev");
+        try{ toast("Dívida de "+nome+" aumentada"); }catch(e){}
+      });
     }
 
     function pagar(nome){
       var p = PAC.filter(function(x){ return x.n===nome; })[0]; if(!p) return;
-      var h = new Date();
-      var dd = ("0"+h.getDate()).slice(-2)+"/"+("0"+(h.getMonth()+1)).slice(-2);
-      var hh = ("0"+h.getHours()).slice(-2)+":"+("0"+h.getMinutes()).slice(-2);
+      p.hist = p.hist || [];
       ["BRL","USD","GS"].forEach(function(mo){
-        if(p.saldo[mo] > 0){
-          MOV.unshift({d:dd,h:hh,tipo:"entrada",desc:p.n+" · quitação",moeda:mo,v:p.saldo[mo]});
+        if((p.saldo[mo]||0) > 0){
+          MOV.unshift({d:hojeCurto(),h:horaCurta(),tipo:"entrada",desc:p.n+" · quitação",moeda:mo,v:p.saldo[mo]});
+          p.hist.unshift({d:hojeCurto(),desc:"quitação",moeda:mo,v:p.saldo[mo],tipo:"entrada"});
           p.saldo[mo] = 0;
         }
       });
-      kpisFin(); painelFin("dev"); renderPac();
+      kpisFin(); renderPac();
+      var seg = document.querySelector("#mkFinSeg button.on");
+      painelFin(seg ? seg.getAttribute("data-f") : "dev");
       try{ toast("Dívida de "+nome+" quitada"); }catch(e){}
     }
 
