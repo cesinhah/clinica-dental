@@ -2277,292 +2277,667 @@
     return responder({erro: 'rota de demonstração não existe: ' + rota}, 404);
   }
 
-
   /* ===========================================================================
-     MÓDULOS NOVOS (19/10/2026) — Laboratório, Estoque, Faturas PY e Configurações.
-     Tudo em memória: é demonstração, some quando recarrega a página.
+     MÓDULOS NOVOS — 19/10/2026  (v2)
      =========================================================================== */
-  (function modulos(){
-    const TITULOS = {lab:'Laboratório', estoque:'Estoque', fatura:'Faturas (PY)', cfg:'Configurações'};
-    const PAPEIS = {lab:['admin','dentista','recepcao'], estoque:['admin','dentista','recepcao'],
-                    fatura:['admin','financeiro'], cfg:['admin']};
+  (function(){
+    "use strict";
 
-    const proteses = [
-      {id:1, paciente:'Cesar Acosta', dentes:'11–15', tipo:'estetico', etapa:'preparo',
-       lab:'Lab. Sorriso', custo:1800000, refacoes:0, manual:null, dias:0, pagoLab:false, pagoPaciente:'parcial', provisorio:true},
-      {id:2, paciente:'Ana Souza', dentes:'12–22', tipo:'estetico', etapa:'laboratorio',
-       lab:'Lab. Sorriso', custo:1200000, refacoes:2, manual:null, dias:12, pagoLab:false, pagoPaciente:'não', provisorio:true},
-      {id:3, paciente:'Roberto Almeida', dentes:'36', tipo:'implante', etapa:'laboratorio',
-       lab:'Lab. Guarani', custo:950000, refacoes:1, manual:null, dias:4, pagoLab:true, pagoPaciente:'não', provisorio:true},
-      {id:4, paciente:'Maria Lima', dentes:'46', tipo:'implante', etapa:'prova',
-       lab:'Lab. Guarani', custo:880000, refacoes:0, manual:null, dias:2, pagoLab:false, pagoPaciente:'parcial', provisorio:false},
-      {id:5, paciente:'Fernanda Costa', dentes:'21–23', tipo:'estetico', etapa:'provisorio',
-       lab:'Lab. Sorriso', custo:1450000, refacoes:1, manual:'y', dias:1, pagoLab:false, pagoPaciente:'não', provisorio:true},
-      {id:6, paciente:'João Pereira', dentes:'11', tipo:'implante', etapa:'instalacao',
-       lab:'Lab. Guarani', custo:990000, refacoes:0, manual:null, dias:0, pagoLab:true, pagoPaciente:'pago', provisorio:false}
+    var PAC = [
+      {n:"Ana Souza",      tel:"(48) 99123-4567", doc:"CPF 123.456.789-00", ult:"12/10", prox:"19/10 08:30", saldo:{BRL:300,USD:0,GS:0},     desde:"mar/2024", tipo:"Particular"},
+      {n:"João Pereira",   tel:"(48) 98812-3344", doc:"CPF 987.654.321-00", ult:"15/10", prox:"19/10 09:40", saldo:{BRL:0,USD:0,GS:0},       desde:"jan/2025", tipo:"Particular"},
+      {n:"Maria Lima",     tel:"(48) 99611-7788", doc:"RUC 4567891-2",      ult:"09/10", prox:"19/10 11:00", saldo:{BRL:900,USD:0,GS:0},     desde:"nov/2023", tipo:"Convênio"},
+      {n:"Carlos Oliveira",tel:"(48) 99733-2200", doc:"C.I. 3.456.789",     ult:"17/10", prox:"19/10 12:15", saldo:{BRL:0,USD:0,GS:1050000}, desde:"fev/2025", tipo:"Particular"},
+      {n:"Fernanda Costa", tel:"(48) 98111-9900", doc:"CPF 321.654.987-00", ult:"18/10", prox:"19/10 16:00", saldo:{BRL:400,USD:0,GS:0},     desde:"jul/2024", tipo:"Particular"},
+      {n:"Roberto Almeida",tel:"(48) 99555-1010", doc:"RUC 9876543-1",      ult:"18/10", prox:"—",            saldo:{BRL:0,USD:300,GS:0},     desde:"abr/2025", tipo:"Particular"}
     ];
 
-    const estoque = [
-      {nome:'Pasta profilática', un:'pote 1kg', min:'1 pote', troca:'02/09', uso:'1 a cada 34 limpezas', st:'ok'},
-      {nome:'Flúor gel', un:'pote 500g', min:'2 potes', troca:'15/09', uso:'1 a cada 21 aplicações', st:'warn'},
-      {nome:'Luva descartável', un:'caixa 100', min:'4 caixas', troca:'10/10', uso:'1 caixa a cada 9 dias', st:'ok'},
-      {nome:'Sugador descartável', un:'pacote', min:'3 pacotes', troca:'28/09', uso:'1 pacote a cada 2 dias', st:'bad'},
-      {nome:'Anestésico 2%', un:'caixa 50', min:'2 caixas', troca:'01/10', uso:'1 caixa a cada 15 dias', st:'ok'},
-      {nome:'Algodão', un:'pacote', min:'2 pacotes', troca:'12/10', uso:'1 pacote a cada 6 dias', st:'warn'},
-      {nome:'Resina A2', un:'seringa', min:'3', troca:'05/09', uso:'—', st:'bad'},
-      {nome:'Ácido fosfórico', un:'seringa', min:'2', troca:'20/09', uso:'—', st:'ok'}
+    var PROT = [
+      {id:1,pac:"Cesar Acosta",   tipo:"estetico",dentes:"11-15",etapa:"preparo",     lab:"Sorriso",custo:1800000,ref:0,manual:null,    dias:1,obs:"provisório colocado"},
+      {id:2,pac:"Ana Souza",      tipo:"estetico",dentes:"12-22",etapa:"laboratorio", lab:"Sorriso",custo:1200000,ref:2,manual:null,    dias:6,obs:"provisório em dia"},
+      {id:3,pac:"Roberto Almeida",tipo:"implante",dentes:"36",   etapa:"laboratorio", lab:"Guaraní",custo:950000, ref:1,manual:null,    dias:4,obs:"provisório ok"},
+      {id:4,pac:"Maria Lima",     tipo:"implante",dentes:"46",   etapa:"prova",       lab:"Guaraní",custo:680000, ref:0,manual:null,    dias:2,obs:"prova marcada"},
+      {id:5,pac:"Fernanda Costa", tipo:"estetico",dentes:"21-23",etapa:"provisorio",  lab:"Sorriso",custo:1450000,ref:1,manual:"amarelo",dias:1,obs:"provisório em dia"},
+      {id:6,pac:"João Pereira",   tipo:"implante",dentes:"11",   etapa:"instalacao",  lab:"Guaraní",custo:990000, ref:0,manual:null,    dias:1,obs:"em dia"}
+    ];
+    var ETAPAS = [["preparo","Preparo"],["laboratorio","Laboratório"],["prova","Prova"],["provisorio","Provisório"],["instalacao","Instalação"]];
+
+    var PRODUTOS = [
+      {id:1, nome:"Resina composta A2",      cat:"Restaurador", un:"seringa", qtd:6, min:4, preco:180, forn:"Dental Cremer"},
+      {id:2, nome:"Anestésico Lidocaína 2%", cat:"Anestesia",   un:"caixa",   qtd:2, min:3, preco:95,  forn:"DFL"},
+      {id:3, nome:"Luva de procedimento",    cat:"Descartável", un:"caixa",   qtd:9, min:5, preco:32,  forn:"Supermed"},
+      {id:4, nome:"Máscara descartável",     cat:"Descartável", un:"caixa",   qtd:3, min:3, preco:28,  forn:"Supermed"},
+      {id:5, nome:"Algodão em rolo",         cat:"Descartável", un:"pacote",  qtd:1, min:2, preco:14,  forn:"Dental Cremer"},
+      {id:6, nome:"Pasta de polimento",      cat:"Limpeza",     un:"pote",    qtd:4, min:2, preco:46,  forn:"Maquira"},
+      {id:7, nome:"Sugador descartável",     cat:"Descartável", un:"caixa",   qtd:12,min:6, preco:22,  forn:"Supermed"},
+      {id:8, nome:"Ácido fosfórico 37%",     cat:"Restaurador", un:"seringa", qtd:5, min:3, preco:38,  forn:"Maquira"},
+      {id:9, nome:"Gesso pedra",             cat:"Prótese",     un:"kg",      qtd:3, min:2, preco:26,  forn:"Guaraní"},
+      {id:10,nome:"Silicone de moldagem",    cat:"Prótese",     un:"pote",    qtd:2, min:2, preco:210, forn:"3M"},
+      {id:11,nome:"Fio de sutura 4-0",       cat:"Cirurgia",    un:"caixa",   qtd:1, min:2, preco:74,  forn:"Shalon"},
+      {id:12,nome:"Clareador 16%",           cat:"Estético",    un:"seringa", qtd:7, min:4, preco:120, forn:"Whiteness"}
+    ];
+    var FICHAS = [
+      {proc:"Limpeza + flúor", itens:[["Pasta de polimento",1],["Luva de procedimento",0.02],["Máscara descartável",0.02]]},
+      {proc:"Restauração",     itens:[["Resina composta A2",1],["Ácido fosfórico 37%",0.2],["Anestésico Lidocaína 2%",0.05]]},
+      {proc:"Moldagem",        itens:[["Silicone de moldagem",0.1],["Gesso pedra",0.3]]},
+      {proc:"Exodontia",       itens:[["Fio de sutura 4-0",0.1],["Anestésico Lidocaína 2%",0.1],["Luva de procedimento",0.03]]}
     ];
 
-    const faturas = [];
+    var MOV = [
+      {d:"19/10",h:"08:30",tipo:"entrada",desc:"Ana Souza · Pix",                    moeda:"BRL",v:250},
+      {d:"19/10",h:"09:40",tipo:"entrada",desc:"João Pereira · Cartão",              moeda:"BRL",v:250},
+      {d:"19/10",h:"12:15",tipo:"entrada",desc:"Carlos Oliveira · Transferência",    moeda:"GS", v:450000},
+      {d:"19/10",h:"14:00",tipo:"saida",  desc:"Compra: luvas e máscaras",           moeda:"BRL",v:180},
+      {d:"19/10",h:"16:00",tipo:"entrada",desc:"Fernanda Costa · Dinheiro",          moeda:"BRL",v:800},
+      {d:"18/10",h:"10:20",tipo:"entrada",desc:"Roberto Almeida · Transferência",    moeda:"USD",v:300},
+      {d:"18/10",h:"17:40",tipo:"saida",  desc:"Laboratório Sorriso · 2 peças",      moeda:"BRL",v:1200},
+      {d:"17/10",h:"11:05",tipo:"entrada",desc:"João Pereira · Pix",                 moeda:"BRL",v:600}
+    ];
 
-    const moeda = v => 'Gs ' + Number(v||0).toLocaleString('pt-BR');
-    const ETAPAS = [['preparo','Preparo'],['laboratorio','Laboratório'],['prova','Prova'],['provisorio','Provisório'],['instalacao','Instalação']];
-    const corPrio = p => p.manual || (p.refacoes >= 2 ? 'r' : p.refacoes === 1 ? 'y' : 'g');
+    var CFG = {estoqueDia:"segunda", avisoProva:2, gravarAuto:true, gravarHora:"18:00", cotUSD:5.55, cotGS:1320, cobranca:"amigavel"};
 
-    function estilos(){
-      const s = document.createElement('style');
-      s.textContent = `
-      #screen-lab .board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start}
-      #screen-lab .col{background:var(--panel,#151b23);border:1px solid var(--border,#28313d);border-radius:12px;padding:8px;min-height:120px}
-      #screen-lab .col h4{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted,#8b98a8);margin:2px 4px 8px;display:flex;justify-content:space-between}
-      .pcard{position:relative;border:1px solid var(--border,#28313d);border-radius:10px;padding:9px 24px 9px 10px;margin-bottom:8px;cursor:grab;background:var(--panel2,#1b222c);border-left-width:4px}
-      .pcard.est{border-left-color:#b083f0}.pcard.imp{border-left-color:#7c9cff}
-      .pcard .nome{font-weight:600;font-size:13px}
-      .pcard .det{font-size:11px;color:var(--muted,#8b98a8);line-height:1.5;margin-top:2px}
-      .pcard .ref{position:absolute;top:7px;right:7px;font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px;border:1px solid #f85149;color:#f85149;background:rgba(248,81,73,.12)}
-      .pcard .prio{position:absolute;right:0;top:8px;bottom:8px;width:5px;border-radius:4px}
-      .prio.g{background:#3fb950}.prio.y{background:#d8a200}.prio.r{background:#f85149}
-      .pcard .acoes{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
-      .pcard .acoes button{font-size:10px;padding:2px 6px;border-radius:6px;border:1px solid var(--border,#28313d);background:transparent;color:var(--muted,#8b98a8);cursor:pointer}
-      .pcard .acoes button.on{color:#06231f;background:#4fd1c5;border-color:#4fd1c5;font-weight:600}
-      #screen-estoque .st, #screen-lab .st{display:inline-flex;gap:4px}
-      #screen-estoque .st button{font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border,#28313d);background:transparent;color:var(--muted,#8b98a8);cursor:pointer}
-      #screen-estoque .st button.on.ok{color:#3fb950;border-color:#3fb950;background:rgba(63,185,80,.14)}
-      #screen-estoque .st button.on.warn{color:#d8a200;border-color:#d8a200;background:rgba(216,162,0,.14)}
-      #screen-estoque .st button.on.bad{color:#f85149;border-color:#f85149;background:rgba(248,81,73,.14)}
-      .kude{background:#f7f5ef;color:#1a1a1a;border-radius:8px;padding:16px;font-family:Consolas,monospace;font-size:12px;line-height:1.7}
-      .kude .lin{display:flex;justify-content:space-between}
-      .kude hr{border:none;border-top:1px dashed #bbb;margin:7px 0}
-      .kude .tt{text-align:center;font-weight:700;letter-spacing:1px;font-size:12.5px}
-      `;
-      document.head.appendChild(s);
+    var fmt = {
+      m:function(v,mo){
+        var dec = (mo==="GS") ? 0 : 2;
+        var s = Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:dec, maximumFractionDigits:dec});
+        return (mo==="USD"?"US$ ":mo==="GS"?"Gs ":"R$ ")+s;
+      },
+      brl:function(v){ return fmt.m(v,"BRL"); }
+    };
+
+    var css = document.createElement("style");
+    css.textContent = [
+      '#screen-pacientes.modo-ficha .pac-lista{display:none}',
+      '#screen-pacientes.modo-ficha .pac-layout{display:block}',
+      '.mk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}',
+      '.mk-head h2{margin:0;font-size:19px}',
+      '.mk-sub{color:#8b95a5;font-size:12px}',
+      '.mk-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}',
+      '.mk-kpi{background:#141a23;border:1px solid #232b38;border-radius:10px;padding:10px 12px}',
+      '.mk-kpi .lab{color:#8b95a5;font-size:11px;text-transform:uppercase;letter-spacing:.04em}',
+      '.mk-kpi .val{font-size:19px;font-weight:600;margin-top:2px}',
+      '.mk-kpi .foot{color:#7d8798;font-size:11px;margin-top:2px}',
+      '.mk-seg{display:flex;gap:6px;margin-bottom:10px}',
+      '.mk-seg button{background:#141a23;border:1px solid #232b38;color:#a9b4c4;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px}',
+      '.mk-seg button.on{background:#1d2836;border-color:#3b5170;color:#e8eef7}',
+      '.kban{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:start}',
+      '.kcol{background:#121821;border:1px solid #232b38;border-radius:10px;padding:8px;min-height:110px}',
+      '.kcol h4{margin:0 0 8px;font-size:12px;color:#9aa6b6;display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:.05em}',
+      '.kcard{position:relative;background:#171e28;border:1px solid #26303d;border-left:3px solid #5b7cff;border-radius:8px;padding:8px 22px 8px 9px;margin-bottom:8px;cursor:pointer;font-size:12px}',
+      '.kcard.est{border-left-color:#b06bff}',
+      '.kcard.imp{border-left-color:#3aa0ff}',
+      '.kcard b{display:block;font-size:12.5px;margin-bottom:2px}',
+      '.kcard .l{color:#8b95a5}',
+      '.kfaixa{position:absolute;right:4px;top:6px;bottom:6px;width:5px;border-radius:3px;background:#4b5563}',
+      '.kfaixa.verde{background:#2ecc71}.kfaixa.amarelo{background:#f5c542}.kfaixa.vermelho{background:#ff5c5c}',
+      '.kref{display:inline-block;background:#2b1d1d;color:#ff9d9d;border:1px solid #52302f;border-radius:6px;padding:1px 6px;font-size:10.5px;margin-top:4px}',
+      '.kdrop{outline:2px dashed #3b5170;outline-offset:-3px}',
+      '.mk-modal{position:fixed;inset:0;background:rgba(6,9,13,.72);display:none;align-items:center;justify-content:center;z-index:9999}',
+      '.mk-modal.on{display:flex}',
+      '.mk-panel{background:#131a23;border:1px solid #2a3442;border-radius:12px;width:min(760px,94vw);max-height:88vh;overflow:auto;padding:16px}',
+      '.mk-panel h3{margin:0 0 4px;font-size:17px}',
+      '.mk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}',
+      '.mk-field{display:flex;flex-direction:column;gap:4px}',
+      '.mk-field span{font-size:11px;color:#8b95a5;text-transform:uppercase;letter-spacing:.04em}',
+      '.mk-field input,.mk-field select,.mk-field textarea{background:#0f141b;border:1px solid #2a3442;color:#e8eef7;border-radius:8px;padding:7px 9px;font-size:13px;font-family:inherit}',
+      '.mk-row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}',
+      '.mk-btn{background:#1d2836;border:1px solid #3b5170;color:#dce6f2;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px}',
+      '.mk-btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}',
+      '.mk-pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;border:1px solid #33404f;color:#a9b4c4}',
+      '.mk-pill.dev{background:#3a1f22;border-color:#6e3236;color:#ffb4b4}',
+      '.mk-pill.ok{background:#17301f;border-color:#2f5b3c;color:#9be3b0}',
+      '.mk-pill.ur{background:#3a2f14;border-color:#6b571f;color:#ffd98a}',
+      'table.mk td.num,table.mk th.num{text-align:right}',
+      '.mk-mini{background:#1a222c;border:1px solid #2a3442;color:#cbd5e1;border-radius:6px;padding:3px 8px;font-size:11.5px;cursor:pointer}',
+      '.mk-note{background:#15202a;border:1px solid #24384a;border-radius:10px;padding:10px 12px;color:#a9b4c4;font-size:12.5px;margin-top:10px}'
+    ].join("\n");
+    document.head.appendChild(css);
+
+    function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
+
+    function saldoTotal(p){
+      return (p.saldo.BRL||0) + (p.saldo.USD||0)*CFG.cotUSD + (p.saldo.GS||0)/CFG.cotGS;
+    }
+    function saldoTexto(p){
+      var parts=[];
+      if(p.saldo.BRL) parts.push(fmt.m(p.saldo.BRL,"BRL"));
+      if(p.saldo.USD) parts.push(fmt.m(p.saldo.USD,"USD"));
+      if(p.saldo.GS)  parts.push(fmt.m(p.saldo.GS,"GS"));
+      return parts.length?parts.join(" + "):"—";
     }
 
-    function secao(id, titulo){
-      const sec = document.createElement('section');
-      sec.className = 'screen';
-      sec.id = 'screen-' + id;
-      sec.innerHTML = '<div class="wrap"><h2 style="margin:0 0 14px">' + titulo + '</h2>' +
-                      '<div id="m-' + id + '"></div></div>';
-      const main = document.querySelector('main') || document.body;
-      main.appendChild(sec);
-      return sec;
+    var CONTEUDO = document.querySelector(".content");
+
+    function novaSecao(id, titulo, sub){
+      var s = el("section","screen"); s.id="screen-mk-"+id;
+      s.appendChild(el("div","mk-head",'<h2>'+titulo+'</h2>'+(sub?'<span class="mk-sub">'+sub+'</span>':'')));
+      var corpo = el("div"); corpo.id="mkCorpo-"+id;
+      s.appendChild(corpo);
+      CONTEUDO.appendChild(s);
+      return s;
+    }
+
+    /* ---------- PACIENTES ---------- */
+    var secPac = novaSecao("pac","Pacientes","clique no nome para abrir o prontuário");
+    secPac.querySelector("#mkCorpo-pac").appendChild(
+      el("div","card",'<div class="tw"><table class="mk"><thead><tr>'+
+        '<th>Paciente</th><th>Último atendimento</th><th>Próxima consulta</th><th>Telefone</th><th>Documento</th><th>Tipo</th><th class="num">Saldo</th>'+
+        '</tr></thead><tbody id="mkPacBody"></tbody></table></div>')
+    );
+
+    function renderPac(){
+      var tb = document.getElementById("mkPacBody"); if(!tb) return;
+      tb.innerHTML = PAC.map(function(p){
+        var tem = saldoTotal(p) > 0.01;
+        return '<tr><td><a href="#" data-pac="'+p.n+'" style="color:#7fb3ff;text-decoration:none">'+p.n+'</a></td>'+
+          '<td>'+p.ult+'</td><td>'+p.prox+'</td><td>'+p.tel+'</td><td>'+p.doc+'</td><td>'+p.tipo+'</td>'+
+          '<td class="num"><span class="mk-pill '+(tem?"dev":"ok")+'">'+(tem?saldoTexto(p):"em dia")+'</span></td></tr>';
+      }).join("");
+      tb.querySelectorAll("a[data-pac]").forEach(function(a){
+        a.addEventListener("click", function(ev){
+          ev.preventDefault();
+          var nome = a.getAttribute("data-pac");
+          try{ openPatient(nome); }catch(e){}
+          var sp = document.getElementById("screen-pacientes");
+          if(sp) sp.classList.add("modo-ficha");
+          mostrarTela("pacientes", nome);
+        });
+      });
+    }
+
+    /* ---------- FINANCEIRO ---------- */
+    var secFin = novaSecao("fin","Financeiro","caixa, movimento, quem deve e conta do paciente");
+    var corpoFin = secFin.querySelector("#mkCorpo-fin");
+    corpoFin.innerHTML =
+      '<div class="mk-kpis" id="mkFinKpis"></div>'+
+      '<div class="mk-seg" id="mkFinSeg">'+
+        '<button data-f="mov" class="on">Movimento do caixa</button>'+
+        '<button data-f="dev">Quem deve</button>'+
+        '<button data-f="conta">Conta do paciente</button>'+
+      '</div><div id="mkFinPanel"></div>';
+
+    function kpisFin(){
+      var s={BRL:0,USD:0,GS:0};
+      MOV.forEach(function(m){
+        if(m.tipo==="entrada") s[m.moeda]+=m.v; else s[m.moeda]-=m.v;
+      });
+      var aberto=0, qtd=0;
+      PAC.forEach(function(p){ var t=saldoTotal(p); if(t>0.01){ aberto+=t; qtd++; } });
+      var k=document.getElementById("mkFinKpis"); if(!k) return;
+      k.innerHTML =
+        '<div class="mk-kpi"><div class="lab">Caixa em real</div><div class="val">'+fmt.m(s.BRL,"BRL")+'</div><div class="foot">entradas − saídas</div></div>'+
+        '<div class="mk-kpi"><div class="lab">Caixa em dólar</div><div class="val">'+fmt.m(s.USD,"USD")+'</div><div class="foot">US$ 1 = R$ '+(CFG.cotUSD+"").replace(".",",")+'</div></div>'+
+        '<div class="mk-kpi"><div class="lab">Caixa em guaraní</div><div class="val">'+fmt.m(s.GS,"GS")+'</div><div class="foot">R$ 1 = Gs '+CFG.cotGS+'</div></div>'+
+        '<div class="mk-kpi"><div class="lab">A receber (pendente)</div><div class="val">'+fmt.brl(aberto)+'</div><div class="foot">'+qtd+' pacientes em aberto</div></div>';
+    }
+
+    function painelFin(qual){
+      var box = document.getElementById("mkFinPanel"); if(!box) return;
+      if(qual==="mov"){
+        var s={BRL:0,USD:0,GS:0};
+        var linhas = MOV.map(function(m){
+          if(m.tipo==="entrada") s[m.moeda]+=m.v; else s[m.moeda]-=m.v;
+          var sinal = m.tipo==="entrada" ? "+" : "−";
+          var cor   = m.tipo==="entrada" ? "#9be3b0" : "#ffb4b4";
+          return '<tr><td>'+m.d+' '+m.h+'</td><td>'+m.desc+'</td><td>'+m.moeda+'</td>'+
+                 '<td class="num" style="color:'+cor+'">'+sinal+' '+fmt.m(m.v,m.moeda)+'</td>'+
+                 '<td class="num">'+fmt.m(s[m.moeda],m.moeda)+'</td></tr>';
+        }).join("");
+        box.innerHTML='<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Quando</th><th>Descrição</th><th>Moeda</th><th class="num">Entrou / saiu</th><th class="num">Saldo da moeda</th></tr></thead><tbody>'+linhas+'</tbody></table></div></div>'+
+          '<div class="mk-note">Saldo corrente por moeda: somar tudo num número só esconde dinheiro.</div>';
+      }
+      if(qual==="dev"){
+        var dev = PAC.filter(function(p){ return saldoTotal(p) > 0.01; });
+        box.innerHTML='<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Paciente</th><th>Telefone</th><th>Último atendimento</th><th>Dívida desde</th><th>Deve</th><th></th></tr></thead><tbody>'+
+          dev.map(function(p){
+            var dias = 12 + p.n.length*3;
+            var cls = dias>45?"dev":dias>20?"ur":"ok";
+            return '<tr><td>'+p.n+'</td><td>'+p.tel+'</td><td>'+p.ult+'</td><td>'+dias+' dias</td>'+
+              '<td><span class="mk-pill '+cls+'">'+saldoTexto(p)+'</span></td>'+
+              '<td class="num"><button class="mk-mini" data-receber="'+p.n+'">Receber</button></td></tr>';
+          }).join("")+'</tbody></table></div></div>';
+        box.querySelectorAll("[data-receber]").forEach(function(b){
+          b.addEventListener("click", function(){ pagar(b.getAttribute("data-receber")); });
+        });
+      }
+      if(qual==="conta"){
+        box.innerHTML =
+          '<div class="card" style="padding:12px">'+
+            '<div class="mk-grid">'+
+              '<label class="mk-field"><span>Paciente</span><select id="mkContaSel">'+PAC.map(function(p){return '<option>'+p.n+'</option>';}).join("")+'</select></label>'+
+              '<div class="mk-field"><span>Saldo devedor</span><div id="mkContaSaldo" style="font-size:18px;font-weight:600;padding-top:6px">—</div></div>'+
+            '</div>'+
+            '<div class="mk-grid" style="grid-template-columns:1fr 1fr 1fr auto">'+
+              '<label class="mk-field"><span>Reais</span><input id="mkPgBRL" type="number" step="0.01" value="0"></label>'+
+              '<label class="mk-field"><span>Dólares</span><input id="mkPgUSD" type="number" step="0.01" value="0"></label>'+
+              '<label class="mk-field"><span>Guaranis</span><input id="mkPgGS" type="number" step="1" value="0"></label>'+
+              '<div class="mk-field" style="justify-content:flex-end"><button class="mk-btn primary" id="mkPgBtn">Receber</button></div>'+
+            '</div>'+
+            '<div class="mk-note">Um pagamento pode ter as três moedas ao mesmo tempo. Cada uma abate o saldo daquela moeda; o que faltar continua devido.</div>'+
+            '<div id="mkContaHist" style="margin-top:12px"></div>'+
+          '</div>';
+        var sel = document.getElementById("mkContaSel");
+        function pintaConta(){
+          var p = PAC.filter(function(x){ return x.n===sel.value; })[0];
+          document.getElementById("mkContaSaldo").textContent = saldoTexto(p);
+          var hist = MOV.filter(function(m){ return m.desc.indexOf(p.n)===0; });
+          document.getElementById("mkContaHist").innerHTML = hist.length
+            ? '<div class="tw"><table class="mk"><thead><tr><th>Data</th><th>Histórico</th><th>Moeda</th><th class="num">Valor</th></tr></thead><tbody>'+
+              hist.map(function(m){ return '<tr><td>'+m.d+'</td><td>'+m.desc+'</td><td>'+m.moeda+'</td><td class="num">'+fmt.m(m.v,m.moeda)+'</td></tr>'; }).join("")+
+              '</tbody></table></div>'
+            : '<div class="mk-sub">Nenhum pagamento registrado para este paciente.</div>';
+        }
+        sel.addEventListener("change", pintaConta); pintaConta();
+        document.getElementById("mkPgBtn").addEventListener("click", function(){
+          var p = PAC.filter(function(x){ return x.n===sel.value; })[0];
+          var b = parseFloat(document.getElementById("mkPgBRL").value)||0;
+          var u = parseFloat(document.getElementById("mkPgUSD").value)||0;
+          var g = parseFloat(document.getElementById("mkPgGS").value)||0;
+          if(!b && !u && !g) return;
+          var h = new Date();
+          var dd = ("0"+h.getDate()).slice(-2)+"/"+("0"+(h.getMonth()+1)).slice(-2);
+          var hh = ("0"+h.getHours()).slice(-2)+":"+("0"+h.getMinutes()).slice(-2);
+          [["BRL",b],["USD",u],["GS",g]].forEach(function(par){
+            if(par[1] > 0){
+              p.saldo[par[0]] = Math.max(0,(p.saldo[par[0]]||0) - par[1]);
+              MOV.unshift({d:dd,h:hh,tipo:"entrada",desc:p.n+" · pagamento",moeda:par[0],v:par[1]});
+            }
+          });
+          kpisFin(); pintaConta(); renderPac();
+          try{ toast("Pagamento registrado — dívida abatida"); }catch(e){}
+        });
+      }
+    }
+
+    function pagar(nome){
+      var p = PAC.filter(function(x){ return x.n===nome; })[0]; if(!p) return;
+      var h = new Date();
+      var dd = ("0"+h.getDate()).slice(-2)+"/"+("0"+(h.getMonth()+1)).slice(-2);
+      var hh = ("0"+h.getHours()).slice(-2)+":"+("0"+h.getMinutes()).slice(-2);
+      ["BRL","USD","GS"].forEach(function(mo){
+        if(p.saldo[mo] > 0){
+          MOV.unshift({d:dd,h:hh,tipo:"entrada",desc:p.n+" · quitação",moeda:mo,v:p.saldo[mo]});
+          p.saldo[mo] = 0;
+        }
+      });
+      kpisFin(); painelFin("dev"); renderPac();
+      try{ toast("Dívida de "+nome+" quitada"); }catch(e){}
     }
 
     /* ---------- LABORATÓRIO ---------- */
-    function desenhaLab(){
-      const alvo = document.getElementById('m-lab');
-      let h = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">' +
-        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted,#8b98a8)">Kanban geral · ' + proteses.length + ' trabalhos</span>' +
-        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:#f85149;border-color:#f85149">' +
-          proteses.filter(p=>corPrio(p)==='r').length + ' em prioridade vermelha</span>' +
-        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted,#8b98a8)">' +
-          moeda(proteses.filter(p=>p.etapa!=='instalacao').reduce((s,p)=>s+p.custo,0)) + ' em laboratório</span></div>' +
-        '<div class="board">';
-      ETAPAS.forEach(([id, nome])=>{
-        const lista = proteses.filter(p=>p.etapa===id);
-        h += '<div class="col" data-etapa="' + id + '"><h4>' + nome + ' <span>' + lista.length + '</span></h4>';
-        lista.forEach(p=>{
-          h += '<div class="pcard ' + (p.tipo==='estetico'?'est':'imp') + '" draggable="true" data-id="' + p.id + '">' +
-               '<span class="ref">' + p.refacoes + '</span>' +
-               '<span class="prio ' + corPrio(p) + '"></span>' +
-               '<div class="nome">' + p.paciente + '</div>' +
-               '<div class="det">' + (p.tipo==='estetico'?'Estético':'Implante') + ' · dentes ' + p.dentes + '<br>' +
-               p.lab + ' · ' + moeda(p.custo) + '<br>' +
-               (p.dias > 0 ? 'parado há ' + p.dias + ' dias' : 'em dia') +
-               (p.provisorio ? ' · provisório' : '') + '</div>' +
-               '<div class="acoes">' +
-                 '<button data-ref="' + p.id + '">+ refação</button>' +
-                 ['g','y','r'].map(c=>'<button data-prio="' + p.id + '" data-cor="' + c + '" class="' + (p.manual===c?'on':'') + '">' + ({g:'verde',y:'amar.',r:'verm.'})[c] + '</button>').join('') +
-               '</div></div>';
-        });
-        h += '</div>';
-      });
-      h += '</div><p style="color:var(--muted,#8b98a8);font-size:12px;margin-top:12px">' +
-           'Arraste o cartão pra mudar de etapa. A faixa da direita é automática pelo número de refações ' +
-           '(0 verde, 1 amarelo, 2+ vermelho) e a marcação manual manda mais que a automática.</p>';
-      alvo.innerHTML = h;
+    var secLab = novaSecao("lab","Laboratório","kanban geral · clique no cartão para abrir");
+    secLab.querySelector("#mkCorpo-lab").innerHTML = '<div class="mk-kpis" id="mkLabKpis"></div><div class="kban" id="mkKban"></div>';
 
-      alvo.querySelectorAll('[data-ref]').forEach(b=>b.onclick=()=>{
-        const p = proteses.find(x=>x.id===+b.dataset.ref); p.refacoes++; desenhaLab();
+    function corAuto(c){
+      if(c.manual) return c.manual;
+      var pts = c.ref*2 + (c.dias>=5?2:c.dias>=3?1:0);
+      return pts>=4 ? "vermelho" : pts>=2 ? "amarelo" : "verde";
+    }
+    function kpisLab(){
+      var total=0, verm=0, k=document.getElementById("mkLabKpis"); if(!k) return;
+      PROT.forEach(function(c){ total+=c.custo; if(corAuto(c)==="vermelho") verm++; });
+      k.innerHTML =
+        '<div class="mk-kpi"><div class="lab">Casos no laboratório</div><div class="val">'+PROT.length+'</div><div class="foot">kanban geral</div></div>'+
+        '<div class="mk-kpi"><div class="lab">Em prioridade vermelha</div><div class="val" style="color:#ff8f8f">'+verm+'</div><div class="foot">refação ou parado há dias</div></div>'+
+        '<div class="mk-kpi"><div class="lab">Custo de laboratório</div><div class="val">'+fmt.m(total,"GS")+'</div><div class="foot">soma dos casos abertos</div></div>';
+    }
+    function renderKanban(){
+      var box = document.getElementById("mkKban"); if(!box) return;
+      box.innerHTML = ETAPAS.map(function(et){
+        var cards = PROT.filter(function(c){ return c.etapa===et[0]; });
+        return '<div class="kcol" data-etapa="'+et[0]+'"><h4><span>'+et[1]+'</span><span>'+cards.length+'</span></h4>'+
+          cards.map(function(c){
+            var kl = c.tipo==="estetico"?"est":"imp";
+            return '<div class="kcard '+kl+'" draggable="true" data-id="'+c.id+'">'+
+              '<div class="kfaixa '+corAuto(c)+'"></div>'+
+              '<b>'+c.pac+'</b>'+
+              '<div class="l">'+(c.tipo==="estetico"?"Estético":"Implante")+' · dentes '+c.dentes+'</div>'+
+              '<div class="l">Lab. '+c.lab+' · '+fmt.m(c.custo,"GS")+'</div>'+
+              '<div class="l">'+(c.dias===1?"há 1 dia":"parado há "+c.dias+" dias")+(c.obs?" · "+c.obs:"")+'</div>'+
+              (c.ref>0?'<span class="kref">'+c.ref+(c.ref>1?" refações":" refação")+'</span>':'')+
+            '</div>';
+          }).join("")+
+        '</div>';
+      }).join("");
+
+      box.querySelectorAll(".kcard").forEach(function(cd){
+        cd.addEventListener("dblclick", function(){ abrirCard(parseInt(cd.getAttribute("data-id"),10)); });
+        cd.addEventListener("dragstart", function(ev){ ev.dataTransfer.setData("text/plain", cd.getAttribute("data-id")); });
       });
-      alvo.querySelectorAll('[data-prio]').forEach(b=>b.onclick=()=>{
-        const p = proteses.find(x=>x.id===+b.dataset.prio);
-        p.manual = (p.manual === b.dataset.cor) ? null : b.dataset.cor; desenhaLab();
+      box.querySelectorAll(".kcol").forEach(function(col){
+        col.addEventListener("dragover", function(ev){ ev.preventDefault(); col.classList.add("kdrop"); });
+        col.addEventListener("dragleave", function(){ col.classList.remove("kdrop"); });
+        col.addEventListener("drop", function(ev){
+          ev.preventDefault(); col.classList.remove("kdrop");
+          var id = parseInt(ev.dataTransfer.getData("text/plain"),10);
+          var c = PROT.filter(function(x){ return x.id===id; })[0]; if(!c) return;
+          c.etapa = col.getAttribute("data-etapa");
+          kpisLab(); renderKanban();
+          try{ toast(c.pac+" → "+col.querySelector("h4 span").textContent); }catch(e){}
+        });
       });
-      alvo.querySelectorAll('.pcard').forEach(c=>{
-        c.ondragstart = e => e.dataTransfer.setData('text/plain', c.dataset.id);
-      });
-      alvo.querySelectorAll('.col').forEach(col=>{
-        col.ondragover = e => e.preventDefault();
-        col.ondrop = e => {
-          e.preventDefault();
-          const id = +e.dataTransfer.getData('text/plain');
-          const p = proteses.find(x=>x.id===id);
-          if(!p) return;
-          p.etapa = col.dataset.etapa; p.dias = 0;
-          desenhaLab();
-        };
+    }
+
+    function abrirCard(id){
+      var c = PROT.filter(function(x){ return x.id===id; })[0]; if(!c) return;
+      var m = document.getElementById("mkModalCard");
+      if(!m){
+        m = el("div","mk-modal"); m.id="mkModalCard";
+        m.innerHTML = '<div class="mk-panel" id="mkCardPanel"></div>';
+        document.body.appendChild(m);
+        m.addEventListener("click", function(ev){ if(ev.target===m) m.classList.remove("on"); });
+      }
+      var fa = corAuto(c);
+      document.getElementById("mkCardPanel").innerHTML =
+        '<h3>'+c.pac+'</h3><div class="mk-sub">'+(c.tipo==="estetico"?"Estético":"Implante")+' · dentes '+c.dentes+' · '+c.lab+'</div>'+
+        '<div class="mk-grid">'+
+          '<label class="mk-field"><span>Etapa</span><select id="mkEdEtapa">'+ETAPAS.map(function(e){ return '<option value="'+e[0]+'"'+(c.etapa===e[0]?" selected":"")+'>'+e[1]+'</option>'; }).join("")+'</select></label>'+
+          '<label class="mk-field"><span>Tipo</span><select id="mkEdTipo"><option value="estetico"'+(c.tipo==="estetico"?" selected":"")+'>Estético</option><option value="implante"'+(c.tipo==="implante"?" selected":"")+'>Implante</option></select></label>'+
+          '<label class="mk-field"><span>Dentes</span><input id="mkEdDentes" value="'+c.dentes+'"></label>'+
+          '<label class="mk-field"><span>Laboratório</span><input id="mkEdLab" value="'+c.lab+'"></label>'+
+          '<label class="mk-field"><span>Custo do laboratório (Gs)</span><input id="mkEdCusto" type="number" value="'+c.custo+'"></label>'+
+          '<label class="mk-field"><span>Dias parado</span><input id="mkEdDias" type="number" value="'+c.dias+'"></label>'+
+          '<label class="mk-field"><span>Refações</span><input id="mkEdRef" type="number" min="0" value="'+c.ref+'"></label>'+
+          '<label class="mk-field"><span>Prioridade</span><select id="mkEdPrio">'+
+            '<option value=""'+(!c.manual?" selected":"")+'>Automática (refação + dias)</option>'+
+            '<option value="verde"'+(c.manual==="verde"?" selected":"")+'>Verde — tranquilo</option>'+
+            '<option value="amarelo"'+(c.manual==="amarelo"?" selected":"")+'>Amarelo — atenção</option>'+
+            '<option value="vermelho"'+(c.manual==="vermelho"?" selected":"")+'>Vermelho — urgente</option>'+
+          '</select></label>'+
+        '</div>'+
+        '<label class="mk-field" style="margin-top:10px"><span>Observação</span><textarea id="mkEdObs" rows="3">'+(c.obs||"")+'</textarea></label>'+
+        '<div class="mk-note">Prioridade agora: <span class="mk-pill '+(fa==="vermelho"?"dev":fa==="amarelo"?"ur":"ok")+'">'+fa+'</span>. '+
+          'O automático soma 2 por refação e +1/+2 por dias parados — vira vermelho com 4 pontos.</div>'+
+        '<div class="mk-row"><button class="mk-btn" id="mkEdFecha">Fechar</button><button class="mk-btn primary" id="mkEdSalva">Salvar</button></div>';
+      m.classList.add("on");
+      document.getElementById("mkEdFecha").addEventListener("click", function(){ m.classList.remove("on"); });
+      document.getElementById("mkEdSalva").addEventListener("click", function(){
+        c.etapa  = document.getElementById("mkEdEtapa").value;
+        c.tipo   = document.getElementById("mkEdTipo").value;
+        c.dentes = document.getElementById("mkEdDentes").value;
+        c.lab    = document.getElementById("mkEdLab").value;
+        c.custo  = parseInt(document.getElementById("mkEdCusto").value,10)||0;
+        c.dias   = parseInt(document.getElementById("mkEdDias").value,10)||0;
+        c.ref    = parseInt(document.getElementById("mkEdRef").value,10)||0;
+        c.manual = document.getElementById("mkEdPrio").value || null;
+        c.obs    = document.getElementById("mkEdObs").value;
+        m.classList.remove("on");
+        kpisLab(); renderKanban();
+        try{ toast("Cartão atualizado"); }catch(e){}
       });
     }
 
     /* ---------- ESTOQUE ---------- */
-    function desenhaEstoque(){
-      const alvo = document.getElementById('m-estoque');
-      const urgentes = estoque.filter(i=>i.st==='bad').length;
-      let h = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">' +
-        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted,#8b98a8)">Inventário de segunda · 8h · quem conta: Edelma</span>' +
-        '<span class="pill" style="border:1px solid #f85149;color:#f85149;border-radius:999px;padding:6px 12px;font-size:12px">' + urgentes + ' urgentes</span>' +
-        '<span class="pill" style="border:1px solid #d8a200;color:#d8a200;border-radius:999px;padding:6px 12px;font-size:12px">' + estoque.filter(i=>i.st==='warn').length + ' a comprar</span>' +
-        '<button class="btn" id="btnCompras" style="margin-left:auto">Gerar lista de compras</button></div>' +
-        '<table><thead><tr><th>Material</th><th>Unidade</th><th>Mínimo</th><th>Última troca</th><th>Uso médio</th><th>Status</th></tr></thead><tbody>';
-      estoque.forEach((it, i)=>{
-        h += '<tr><td><b>' + it.nome + '</b></td><td>' + it.un + '</td><td>' + it.min + '</td><td>' + it.troca + '</td>' +
-             '<td style="font-size:11.5px;color:var(--muted,#8b98a8)">' + it.uso + '</td>' +
-             '<td><span class="st">' +
-               ['ok','warn','bad'].map(c=>'<button data-i="' + i + '" data-st="' + c + '" class="' + c + (it.st===c?' on':'') + '">' +
-                 ({ok:'Suficiente',warn:'Comprar',bad:'Urgente'})[c] + '</button>').join('') +
-             '</span></td></tr>';
+    var secEst = novaSecao("est","Estoque","inventário, cadastro de produtos e ficha técnica");
+    secEst.querySelector("#mkCorpo-est").innerHTML =
+      '<div class="mk-seg" id="mkEstSeg">'+
+        '<button data-e="inv" class="on">Inventário</button>'+
+        '<button data-e="prod">Cadastro de produtos</button>'+
+        '<button data-e="ficha">Ficha técnica</button>'+
+      '</div><div id="mkEstPanel"></div>';
+
+    function statusDe(p){ return p.qtd < p.min ? "urgente" : (p.qtd <= p.min*1.2 ? "comprar" : "ok"); }
+
+    function painelEst(qual){
+      var box = document.getElementById("mkEstPanel"); if(!box) return;
+      if(qual==="inv"){
+        box.innerHTML='<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Produto</th><th>Unidade</th><th class="num">Tem</th><th class="num">Mínimo</th><th>Status</th><th class="num">Contagem</th></tr></thead><tbody>'+
+          PRODUTOS.map(function(p){
+            var s = statusDe(p);
+            var cls = s==="urgente"?"dev":s==="comprar"?"ur":"ok";
+            var txt = s==="urgente"?"comprar urgente":s==="comprar"?"necessita comprar":"suficiente";
+            return '<tr><td>'+p.nome+'</td><td>'+p.un+'</td><td class="num">'+p.qtd+'</td><td class="num">'+p.min+'</td>'+
+              '<td><span class="mk-pill '+cls+'">'+txt+'</span></td>'+
+              '<td class="num"><button class="mk-mini" data-mais="'+p.id+'">+1</button> <button class="mk-mini" data-menos="'+p.id+'">−1</button></td></tr>';
+          }).join("")+'</tbody></table></div></div>'+
+          '<div class="mk-head" style="margin-top:10px"><button class="mk-btn primary" id="mkListaCompra">Gerar lista de compras</button><span class="mk-sub" id="mkListaOut"></span></div>';
+        box.querySelectorAll("[data-mais]").forEach(function(b){
+          b.addEventListener("click", function(){
+            var p = PRODUTOS.filter(function(x){ return String(x.id)===b.getAttribute("data-mais"); })[0];
+            p.qtd++; painelEst("inv");
+          });
+        });
+        box.querySelectorAll("[data-menos]").forEach(function(b){
+          b.addEventListener("click", function(){
+            var p = PRODUTOS.filter(function(x){ return String(x.id)===b.getAttribute("data-menos"); })[0];
+            p.qtd = Math.max(0,p.qtd-1); painelEst("inv");
+          });
+        });
+        document.getElementById("mkListaCompra").addEventListener("click", function(){
+          var falta = PRODUTOS.filter(function(p){ return statusDe(p)!=="ok"; });
+          document.getElementById("mkListaOut").textContent = falta.length
+            ? falta.length+" itens: "+falta.map(function(p){ return p.nome+" ("+p.qtd+"/"+p.min+")"; }).join(", ")
+            : "Nada faltando — inventário em dia.";
+        });
+      }
+      if(qual==="prod"){
+        box.innerHTML='<div class="card"><div class="tw"><table class="mk"><thead><tr><th>Produto</th><th>Categoria</th><th>Unidade</th><th class="num">Preço</th><th>Fornecedor</th><th class="num">Qtd</th><th class="num">Mínimo</th><th></th></tr></thead><tbody>'+
+          PRODUTOS.map(function(p){
+            return '<tr><td>'+p.nome+'</td><td>'+p.cat+'</td><td>'+p.un+'</td><td class="num">'+fmt.brl(p.preco)+'</td>'+
+              '<td>'+p.forn+'</td><td class="num">'+p.qtd+'</td><td class="num">'+p.min+'</td>'+
+              '<td class="num"><button class="mk-mini" data-edit="'+p.id+'">Editar</button></td></tr>';
+          }).join("")+'</tbody></table></div></div>'+
+          '<div class="mk-head" style="margin-top:10px"><button class="mk-btn primary" id="mkNovoProd">+ Novo produto</button>'+
+          '<span class="mk-sub">catálogo inteiro — não só o que tem em estoque</span></div>';
+        box.querySelectorAll("[data-edit]").forEach(function(b){
+          b.addEventListener("click", function(){ editarProduto(parseInt(b.getAttribute("data-edit"),10)); });
+        });
+        document.getElementById("mkNovoProd").addEventListener("click", function(){ editarProduto(null); });
+      }
+      if(qual==="ficha"){
+        box.innerHTML = FICHAS.map(function(f){
+          var custo = f.itens.reduce(function(a,it){
+            var p = PRODUTOS.filter(function(x){ return x.nome===it[0]; })[0];
+            return a + (p ? p.preco*it[1] : 0);
+          },0);
+          return '<div class="card" style="padding:12px;margin-bottom:10px"><div class="mk-head" style="margin:0 0 6px"><b>'+f.proc+'</b><div style="flex:1"></div><span class="mk-pill">custo ≈ '+fmt.brl(custo)+'</span></div>'+
+            '<div class="tw"><table class="mk"><thead><tr><th>Insumo</th><th class="num">Quantidade</th><th class="num">Custo</th></tr></thead><tbody>'+
+            f.itens.map(function(it){
+              var p = PRODUTOS.filter(function(x){ return x.nome===it[0]; })[0];
+              return '<tr><td>'+it[0]+'</td><td class="num">'+it[1]+' '+(p?p.un:"")+'</td><td class="num">'+fmt.brl((p?p.preco:0)*it[1])+'</td></tr>';
+            }).join("")+'</tbody></table></div></div>';
+        }).join("")+'<div class="mk-note">Ficha técnica é o que transforma estoque em custo por atendimento.</div>';
+      }
+    }
+
+    function editarProduto(id){
+      var p = id ? PRODUTOS.filter(function(x){ return x.id===id; })[0]
+                 : {id:(PRODUTOS.length+1), nome:"", cat:"Restaurador", un:"unidade", qtd:0, min:0, preco:0, forn:""};
+      var m = document.getElementById("mkModalProd");
+      if(!m){
+        m = el("div","mk-modal"); m.id="mkModalProd";
+        m.innerHTML='<div class="mk-panel" id="mkProdPanel"></div>';
+        document.body.appendChild(m);
+        m.addEventListener("click", function(ev){ if(ev.target===m) m.classList.remove("on"); });
+      }
+      document.getElementById("mkProdPanel").innerHTML =
+        '<h3>'+(id?"Editar produto":"Novo produto")+'</h3>'+
+        '<div class="mk-grid">'+
+          '<label class="mk-field"><span>Nome</span><input id="mkPrNome" value="'+p.nome+'"></label>'+
+          '<label class="mk-field"><span>Categoria</span><input id="mkPrCat" value="'+p.cat+'"></label>'+
+          '<label class="mk-field"><span>Unidade</span><input id="mkPrUn" value="'+p.un+'"></label>'+
+          '<label class="mk-field"><span>Fornecedor</span><input id="mkPrForn" value="'+p.forn+'"></label>'+
+          '<label class="mk-field"><span>Preço unitário (R$)</span><input id="mkPrPreco" type="number" step="0.01" value="'+p.preco+'"></label>'+
+          '<label class="mk-field"><span>Quantidade atual</span><input id="mkPrQtd" type="number" value="'+p.qtd+'"></label>'+
+          '<label class="mk-field"><span>Estoque mínimo</span><input id="mkPrMin" type="number" value="'+p.min+'"></label>'+
+        '</div>'+
+        '<div class="mk-row"><button class="mk-btn" id="mkPrCancela">Cancelar</button><button class="mk-btn primary" id="mkPrSalva">Salvar</button></div>';
+      m.classList.add("on");
+      document.getElementById("mkPrCancela").addEventListener("click", function(){ m.classList.remove("on"); });
+      document.getElementById("mkPrSalva").addEventListener("click", function(){
+        p.nome  = document.getElementById("mkPrNome").value || "Sem nome";
+        p.cat   = document.getElementById("mkPrCat").value;
+        p.un    = document.getElementById("mkPrUn").value;
+        p.forn  = document.getElementById("mkPrForn").value;
+        p.preco = parseFloat(document.getElementById("mkPrPreco").value)||0;
+        p.qtd   = parseInt(document.getElementById("mkPrQtd").value,10)||0;
+        p.min   = parseInt(document.getElementById("mkPrMin").value,10)||0;
+        if(!id) PRODUTOS.push(p);
+        m.classList.remove("on");
+        painelEst("prod");
+        try{ toast("Produto salvo"); }catch(e){}
       });
-      h += '</tbody></table>';
-      alvo.innerHTML = h;
-      alvo.querySelectorAll('.st button').forEach(b=>b.onclick=()=>{
-        estoque[+b.dataset.i].st = b.dataset.st; desenhaEstoque();
-      });
-      document.getElementById('btnCompras').onclick = ()=>{
-        const lista = estoque.filter(i=>i.st!=='ok').map(i=>i.nome + ' (' + i.un + ')');
-        alert('Lista de compras\n\n' + (lista.length ? lista.join('\n') : 'nada pra comprar'));
-      };
     }
 
     /* ---------- FATURAS ---------- */
-    function desenhaFatura(){
-      const alvo = document.getElementById('m-fatura');
-      alvo.innerHTML =
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
-          '<div class="card" style="padding:16px;border:1px solid var(--border,#28313d);border-radius:12px">' +
-            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Cliente</label><input id="fNome" value="Maria Lima" style="width:100%;margin:4px 0 10px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit">' +
-            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Documento</label>' +
-            '<div style="display:flex;gap:6px;margin:4px 0 10px"><select id="fTipo" style="padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>C.I.</option><option>RUC</option><option>CPF</option></select>' +
-            '<input id="fNum" value="4.562.118" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"></div>' +
-            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Concepto</label><input id="fDesc" value="Tratamento endodôntico — dente 46" style="width:100%;margin:4px 0 10px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit">' +
-            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Valor (Gs)</label><input id="fVal" value="1250000" style="width:100%;margin:4px 0 10px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit">' +
-            '<label style="font-size:11px;color:var(--muted,#8b98a8)">IVA</label><select id="fIva" style="width:100%;margin:4px 0 14px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>10%</option><option>5%</option><option>Exento</option></select>' +
-            '<button class="btn" id="btnEmitir" style="background:#4fd1c5;color:#06231f;font-weight:600">Emitir e enviar ao SIFEN</button>' +
-            '<p style="color:var(--muted,#8b98a8);font-size:12px;margin-top:12px">Gratuito pela web: e-kuatia’i (DNIT), mas é manual. Automático: API paga (Sifende) — Gs 44.900/mês até 50 notas.</p>' +
-          '</div>' +
-          '<div class="card" style="padding:16px;border:1px solid var(--border,#28313d);border-radius:12px">' +
-            '<div id="kudeBox"></div></div>' +
-        '</div>';
-
-      const kude = ()=>{
-        const nome = document.getElementById('fNome').value;
-        const tipo = document.getElementById('fTipo').value;
-        const num  = document.getElementById('fNum').value;
-        const desc = document.getElementById('fDesc').value;
-        const val  = Number(document.getElementById('fVal').value)||0;
-        const iva  = document.getElementById('fIva').value;
-        const ivaV = iva==='Exento' ? 0 : Math.round(val * (iva==='10%'?0.1:0.05) / (1 + (iva==='10%'?0.1:0.05)));
-        document.getElementById('kudeBox').innerHTML =
-          '<div class="kude"><div class="tt">CLÍNICA DENTAL DR. CARLOS &amp; DRA. MARIANA</div>' +
-          '<div style="text-align:center;font-size:10.5px">RUC 80012345-6 · Timbrado 12345678</div><hr>' +
-          '<div class="lin"><span>FACTURA ELECTRÓNICA</span><span>001-001-0000042</span></div>' +
-          '<div class="lin"><span>Fecha</span><span>' + new Date().toLocaleString('pt-BR') + '</span></div><hr>' +
-          '<div class="lin"><span>Cliente</span><span>' + nome + '</span></div>' +
-          '<div class="lin"><span>' + tipo + '</span><span>' + num + '</span></div><hr>' +
-          '<div class="lin"><span>' + desc + '</span><span>' + val.toLocaleString('pt-BR') + '</span></div>' +
-          '<div class="lin"><span>IVA ' + iva + '</span><span>' + ivaV.toLocaleString('pt-BR') + '</span></div><hr>' +
-          '<div class="lin"><b>TOTAL</b><b>Gs ' + val.toLocaleString('pt-BR') + '</b></div>' +
-          '<div style="text-align:center;margin-top:8px;font-size:10px">CDC 01001000000112026101916042000042<br>[ QR do SIFEN ]</div></div>' +
-          '<p id="fStatus" style="color:var(--muted,#8b98a8);font-size:12px;margin-top:8px">Prévia — nada enviado ainda.</p>';
-      };
-      ['fNome','fTipo','fNum','fDesc','fVal','fIva'].forEach(id=>{
-        document.getElementById(id).oninput = kude;
-        document.getElementById(id).onchange = kude;
+    var secFat = novaSecao("fat","Faturas","factura electrónica · Paraguai (SIFEN)");
+    secFat.querySelector("#mkCorpo-fat").innerHTML =
+      '<div class="mk-grid" style="grid-template-columns:1fr 1fr">'+
+        '<div class="card" style="padding:12px">'+
+          '<div class="mk-head" style="margin:0 0 8px"><b>Dados da factura</b><div style="flex:1"></div><span class="mk-sub">RUC = CNPJ paraguaio</span></div>'+
+          '<div class="mk-grid">'+
+            '<label class="mk-field"><span>Documento</span><select id="mkFaTipo"><option>C.I.</option><option>RUC</option><option>CPF</option></select></label>'+
+            '<label class="mk-field"><span>Número</span><input id="mkFaNum" value="3.456.789"></label>'+
+            '<label class="mk-field"><span>Cliente</span><input id="mkFaNome" value="Carlos Oliveira"></label>'+
+            '<label class="mk-field"><span>Condição</span><select><option>Contado</option><option>Crédito 30 dias</option></select></label>'+
+            '<label class="mk-field" style="grid-column:1/-1"><span>Conceito</span><input id="mkFaDesc" value="Tratamiento de conducto · pieza 46"></label>'+
+            '<label class="mk-field"><span>Valor (Gs)</span><input id="mkFaValor" type="number" value="1050000"></label>'+
+            '<label class="mk-field"><span>IVA</span><select id="mkFaIVA"><option value="10">10%</option><option value="5">5%</option><option value="0">Exenta</option></select></label>'+
+          '</div>'+
+          '<div class="mk-row"><button class="mk-btn primary" id="mkFaEmitir">Emitir factura</button></div>'+
+          '<div class="mk-note" id="mkFaStatus">No sistema de verdade esta tela manda para o SIFEN pela API e volta com o CDC e o QR.</div>'+
+        '</div>'+
+        '<div class="card" style="padding:12px;background:#f4f1e8;color:#1b1b1b" id="mkKude">'+
+          '<div style="font-size:13px;font-weight:700">CLÍNICA DENTAL DR. CARLOS &amp; DRA. MARIANA</div>'+
+          '<div style="font-size:11px;color:#555">RUC 80012345-6 · Timbrado 12345678 · Inicio 01/01/2026</div>'+
+          '<div style="border-top:1px dashed #999;margin:8px 0"></div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:12px"><b>FACTURA ELECTRÓNICA</b><span id="mkKuNum">001-001-0000123</span></div>'+
+          '<div style="font-size:11px;margin-top:6px" id="mkKuCli">Cliente: Carlos Oliveira · C.I. 3.456.789</div>'+
+          '<div style="font-size:11px" id="mkKuDesc">Tratamiento de conducto · pieza 46</div>'+
+          '<div style="border-top:1px dashed #999;margin:8px 0"></div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:13px"><span>Total</span><b id="mkKuTotal">Gs 1.050.000</b></div>'+
+          '<div style="font-size:11px;color:#555" id="mkKuIVA">IVA 10% incluido</div>'+
+          '<div style="border-top:1px dashed #999;margin:8px 0"></div>'+
+          '<div style="font-size:10.5px;color:#444">CDC: <span id="mkKuCDC">—</span></div>'+
+          '<div style="margin-top:8px;width:64px;height:64px;background:repeating-linear-gradient(45deg,#111,#111 3px,#fff 3px,#fff 6px)"></div>'+
+        '</div>'+
+      '</div>';
+    (function(){
+      var botao = document.getElementById("mkFaEmitir");
+      if(!botao) return;
+      botao.addEventListener("click", function(){
+        var num  = document.getElementById("mkFaNum").value.replace(/[^\d]/g,"");
+        var nome = document.getElementById("mkFaNome").value;
+        var desc = document.getElementById("mkFaDesc").value;
+        var val  = parseFloat(document.getElementById("mkFaValor").value)||0;
+        var iva  = document.getElementById("mkFaIVA").value;
+        document.getElementById("mkKuCli").textContent = "Cliente: "+nome+" · "+document.getElementById("mkFaTipo").value+" "+num;
+        document.getElementById("mkKuDesc").textContent = desc;
+        document.getElementById("mkKuTotal").textContent = fmt.m(val,"GS");
+        document.getElementById("mkKuIVA").textContent = iva==="0" ? "Exenta de IVA" : "IVA "+iva+"% incluido";
+        document.getElementById("mkKuCDC").textContent = "0"+(Math.floor(Math.random()*9e15)+1e14);
+        document.getElementById("mkFaStatus").innerHTML = '<span class="mk-pill ok">aprovada</span> enviada ao SIFEN — CDC gerado (simulação)';
+        try{ toast("Factura aprovada (simulação)"); }catch(e){}
       });
-      document.getElementById('btnEmitir').onclick = ()=>{
-        document.getElementById('fStatus').innerHTML = '<span style="color:#3fb950">Aprovada pelo SIFEN · enviada no WhatsApp do paciente (PDF).</span>';
-        faturas.push({nome:document.getElementById('fNome').value, valor:document.getElementById('fVal').value});
-      };
-      kude();
-    }
+    })();
 
     /* ---------- CONFIGURAÇÕES ---------- */
-    function desenhaCfg(){
-      const alvo = document.getElementById('m-cfg');
-      const linha = (rotulo, valor, dica) =>
-        '<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border,#28313d)">' +
-        '<div><b style="font-size:13px">' + rotulo + '</b><div style="font-size:11.5px;color:var(--muted,#8b98a8)">' + dica + '</div></div>' +
-        '<div style="min-width:190px">' + valor + '</div></div>';
-      alvo.innerHTML = '<div class="card" style="padding:6px 16px 16px;border:1px solid var(--border,#28313d);border-radius:12px">' +
-        linha('Aviso de prótese parada', '<input value="10" style="width:70px;padding:5px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"> dias', 'quando o trabalhão fica muito tempo no laboratório') +
-        linha('Dia do inventário', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Segunda</option><option>Terça</option><option>Sexta</option></select>', 'dia da contagem de estoque') +
-        linha('Aviso de estoque', '<input value="1" style="width:60px;padding:5px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"> semana antes', 'sempre uma semana antes de acabar') +
-        linha('Gravar consultas', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Manual (aperta quando quer)</option><option>Automático</option></select>', 'qualidade, pasta de destino e resumo de madrugada') +
-        linha('Resumo da gravação', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Depois das 18h</option><option>Depois do último ponto</option></select>', 'processa à noite, pronto no outro dia') +
-        linha('Cotação automática', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Ligada</option><option>Manual</option></select>', 'real, dólar e guaraní') +
-        linha('Cobrança', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>1 lembrete + 1 fatura</option><option>Não cobrar</option></select>', 'nunca insiste mais de uma vez por semana') +
-        '</div>' +
-        '<div class="card" style="padding:16px;margin-top:14px;border:1px solid var(--border,#28313d);border-radius:12px">' +
-        '<b style="font-size:13px">Permissões</b><div style="font-size:11.5px;color:var(--muted,#8b98a8);margin:4px 0 10px">caixinhas por pessoa — não é mais papel fixo</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;font-size:12.5px">' +
-        ['Agenda','Pacientes','Prontuário','Financeiro ver','Financeiro receber','Custo do laboratório','Estoque','Robô','Relatórios','Configurações','Equipe','Nota fiscal']
-          .map(p=>'<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" checked> ' + p + '</label>').join('') +
-        '</div></div>';
+    var secCfg = novaSecao("cfg","Configurações","o que é ajustável fica aqui");
+    secCfg.querySelector("#mkCorpo-cfg").innerHTML =
+      '<div class="mk-grid" style="grid-template-columns:1fr 1fr">'+
+        '<div class="card" style="padding:12px"><div class="section-title">Operação</div>'+
+          '<label class="mk-field"><span>Dia do inventário</span><select id="mkCfgDia">'+["segunda","terça","quarta","quinta","sexta"].map(function(d){ return '<option'+(CFG.estoqueDia===d?" selected":"")+'>'+d+'</option>'; }).join("")+'</select></label>'+
+          '<label class="mk-field" style="margin-top:8px"><span>Aviso de prova (dias antes)</span><input id="mkCfgAviso" type="number" value="'+CFG.avisoProva+'"></label>'+
+          '<label class="mk-field" style="margin-top:8px"><span>Cotação do dólar (R$)</span><input id="mkCfgUSD" type="number" step="0.01" value="'+CFG.cotUSD+'"></label>'+
+          '<label class="mk-field" style="margin-top:8px"><span>Cotação do guaraní (R$ 1 =)</span><input id="mkCfgGS" type="number" step="1" value="'+CFG.cotGS+'"></label>'+
+        '</div>'+
+        '<div class="card" style="padding:12px"><div class="section-title">Gravação das consultas</div>'+
+          '<label class="mk-field"><span>Gravar</span><select id="mkCfgGrava"><option value="auto">automático</option><option value="manual">só quando eu mandar</option></select></label>'+
+          '<label class="mk-field" style="margin-top:8px"><span>Processar resumo a partir de</span><input id="mkCfgHora" type="time" value="'+CFG.gravarHora+'"></label>'+
+          '<div class="section-title" style="margin-top:12px">Cobrança</div>'+
+          '<label class="mk-field"><span>Estilo</span><select id="mkCfgCob"><option value="amigavel" selected>amigável (1 lembrete + 7 dias + 1 aviso)</option><option value="manual">só manual</option><option value="off">desligada</option></select></label>'+
+          '<div class="mk-note">O robô não manda orçamento sozinho; cobrança segue o combinado.</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card" style="padding:12px;margin-top:10px"><div class="section-title">Permissões por pessoa</div>'+
+        '<div class="tw"><table class="mk"><thead><tr><th>Pessoa</th><th>Agenda</th><th>Pacientes</th><th>Prontuário</th><th>Fin. ver</th><th>Fin. receber</th><th>Custo lab.</th><th>Estoque</th><th>Relatórios</th></tr></thead><tbody>'+
+          [["Cesar (dono)",1,1,1,1,1,1,1,1],["Fernanda (secretária)",1,1,0,1,1,0,1,0],["Dra. Mariana",1,1,1,0,0,1,1,1],["Edelma (estoque)",0,0,0,0,0,0,1,0]].map(function(l){
+            return '<tr><td>'+l[0]+'</td>'+l.slice(1).map(function(v){ return '<td><input type="checkbox"'+(v?" checked":"")+'></td>'; }).join("")+'</tr>';
+          }).join("")+'</tbody></table></div>'+
+        '<div class="mk-note">Permissão é caixinha, não cargo.</div>'+
+      '</div>'+
+      '<div class="mk-row"><button class="mk-btn primary" id="mkCfgSalva">Salvar configurações</button></div>';
+    (function(){
+      var b = document.getElementById("mkCfgSalva"); if(!b) return;
+      b.addEventListener("click", function(){
+        CFG.estoqueDia = document.getElementById("mkCfgDia").value;
+        CFG.avisoProva = parseInt(document.getElementById("mkCfgAviso").value,10)||2;
+        CFG.cotUSD     = parseFloat(document.getElementById("mkCfgUSD").value)||CFG.cotUSD;
+        CFG.cotGS      = parseFloat(document.getElementById("mkCfgGS").value)||CFG.cotGS;
+        CFG.gravarHora = document.getElementById("mkCfgHora").value;
+        CFG.cobranca   = document.getElementById("mkCfgCob").value;
+        kpisFin(); renderPac();
+        try{ toast("Configurações salvas"); }catch(e){}
+      });
+    })();
+
+    /* ---------- NAVEGAÇÃO ---------- */
+    var MENU = [["pac","Pacientes"],["fin","Financeiro"],["lab","Laboratório"],["est","Estoque"],["fat","Faturas (PY)"],["cfg","Configurações"]];
+
+    function mostrarTela(id, titulo){
+      document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+      var alvo = document.getElementById("screen-mk-"+id) || document.getElementById("screen-"+id);
+      if(alvo) alvo.classList.add("active");
+      document.querySelectorAll(".nav button").forEach(function(b){
+        b.classList.toggle("active", b.getAttribute("data-extra")===id || b.getAttribute("data-screen")===id);
+      });
+      var sp2 = document.getElementById("screen-pacientes");
+      if(sp2 && id!=="pacientes") sp2.classList.remove("modo-ficha");
+      var achou = MENU.filter(function(x){ return x[0]===id; })[0];
+      var top = document.getElementById("topTitle");
+      if(top) top.textContent = titulo || (achou ? achou[1] : "Pacientes");
+      window.scrollTo({top:0,behavior:"smooth"});
     }
 
-    function monta(){
-      estilos();
-      secao('lab','Laboratório');
-      secao('estoque','Estoque');
-      secao('fatura','Faturas (PY)');
-      secao('cfg','Configurações');
-
-      const nav = document.querySelector('nav.nav');
-      if(!nav) return;
-      const grupo = document.createElement('div');
-      grupo.className = 'nav-grupo';
-      grupo.textContent = 'Clínica';
-      nav.appendChild(grupo);
-
-      Object.keys(TITULOS).forEach(id=>{
-        const b = document.createElement('button');
-        b.dataset.extra = id;
-        b.innerHTML = '<span class="ico">•</span><span>' + TITULOS[id] + '</span>';
-        b.onclick = ()=>{
-          document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-          document.getElementById('screen-' + id).classList.add('active');
-          document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active', x.dataset.extra === id));
-          document.getElementById('topTitle').textContent = TITULOS[id];
-          if(id==='lab') desenhaLab();
-          if(id==='estoque') desenhaEstoque();
-          if(id==='fatura') desenhaFatura();
-          if(id==='cfg') desenhaCfg();
-          window.scrollTo({top:0,behavior:'smooth'});
-        };
-        nav.appendChild(b);
+    function montarMenu(){
+      var nav = document.querySelector(".nav"); if(!nav) return;
+      ["pacientes","dinheiro"].forEach(function(alvo){
+        var b = nav.querySelector('button[data-screen="'+alvo+'"]');
+        if(b) b.style.display = "none";
       });
-
-      document.querySelectorAll('.nav button[data-screen]').forEach(b=>{
-        b.addEventListener('click', ()=>{
-          document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
-          b.classList.add('active');
+      var grupo = el("div","nav-grupo","<div class=\"nav-titulo\">CLÍNICA</div>");
+      MENU.forEach(function(it){
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "nav-item"; b.setAttribute("data-extra", it[0]);
+        b.innerHTML = '<span class="dot"></span>'+it[1];
+        b.addEventListener("click", function(){ mostrarTela(it[0]); });
+        grupo.appendChild(b);
+      });
+      nav.appendChild(grupo);
+      nav.querySelectorAll("button[data-screen]").forEach(function(b){
+        b.addEventListener("click", function(){
+          document.querySelectorAll(".screen").forEach(function(s){
+            if(s.id.indexOf("screen-mk-")===0) s.classList.remove("active");
+          });
+          var sp = document.getElementById("screen-pacientes");
+          if(b.getAttribute("data-screen")==="pacientes" && sp) sp.classList.remove("modo-ficha");
         });
       });
     }
 
-    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', monta);
-    else monta();
+    function iniciar(){
+      montarMenu();
+      renderPac();
+      kpisFin(); painelFin("mov");
+      document.querySelectorAll("#mkFinSeg button").forEach(function(b){
+        b.addEventListener("click", function(){
+          document.querySelectorAll("#mkFinSeg button").forEach(function(x){ x.classList.remove("on"); });
+          b.classList.add("on"); painelFin(b.getAttribute("data-f"));
+        });
+      });
+      kpisLab(); renderKanban();
+      painelEst("inv");
+      document.querySelectorAll("#mkEstSeg button").forEach(function(b){
+        b.addEventListener("click", function(){
+          document.querySelectorAll("#mkEstSeg button").forEach(function(x){ x.classList.remove("on"); });
+          b.classList.add("on"); painelEst(b.getAttribute("data-e"));
+        });
+      });
+    }
+
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);
+    else iniciar();
+
   })();
   async function api(caminho, opcoes){
     opcoes = opcoes || {};
