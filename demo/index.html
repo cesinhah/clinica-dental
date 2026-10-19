@@ -385,6 +385,17 @@
   /* FICHA DO PACIENTE */
   .pac-layout{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:8px;align-items:start}
   .pac-lista .hist-item{cursor:pointer}
+  /* LISTA DE PACIENTES: uma coluna só. O nome abre a ficha no clique; telefone, idioma,
+     próxima consulta e saldo ficaram na ficha (antes essa tabela de 5 colunas espremia os
+     títulos dentro dos 340px da coluna e, no celular, obrigava a rolar de lado). */
+  .pac-lista table{min-width:0}
+  .pac-lista td{padding:0}
+  .pac-nome{
+    display:block;width:100%;min-height:36px;padding:8px 12px;
+    background:none;border:none;font:inherit;font-size:13.5px;font-weight:700;
+    color:var(--text);text-align:left;cursor:pointer;
+  }
+  .pac-nome:hover{color:var(--clinic-dark);text-decoration:underline;text-underline-offset:2px}
   .ficha-head{
     display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:10px;
     padding:7px 11px;background:var(--panel-head);border:1px solid var(--border);border-radius:6px;
@@ -408,7 +419,7 @@
   .tab.active{color:var(--text);background:var(--card);border-color:var(--border-strong);border-bottom:1px solid var(--card);font-weight:700}
 
   /* ODONTOGRAMA */
-  .teeth{display:flex;flex-wrap:wrap;gap:3px;max-width:520px}
+  .teeth{display:flex;flex-wrap:wrap;gap:3px;max-width:560px}
   .tooth{
     width:30px;height:35px;border:1px solid var(--border);border-radius:6px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -417,6 +428,11 @@
   .tooth:hover{border-color:var(--clinic);background:var(--clinic-soft)}
   .tooth.done{background:var(--accent-solid);color:#fff;border-color:var(--accent-solid)}
   .tooth.todo{background:var(--amber-soft);color:var(--amber-ink);border-color:var(--amber-line)}
+  /* os dois estados que a tela não conhecia (QA BUG-18): em andamento e problema */
+  .tooth.andamento{background:var(--clinic-soft);color:var(--clinic);border-color:var(--clinic)}
+  .tooth.problema{background:var(--red-soft);color:var(--red);border-color:var(--red)}
+  /* quebra entre a arcada de cima (18–28) e a de baixo (48–38): QA BUG-19 */
+  .teeth .quebra-arcada{flex-basis:100%;height:0}
 
   /* EXAMES */
   .radio{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#0b1220}
@@ -434,6 +450,14 @@
     opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:300;max-width:92vw;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* AVISO DISCRETO DE REDE / LICENÇA (fica no topo, não cobre a tela) */
+  .aviso-rede{
+    position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:310;
+    background:var(--card);border:1px solid var(--border-strong);border-radius:8px;
+    color:var(--muted);font-size:12px;line-height:1.4;padding:6px 12px;max-width:92vw;
+    box-shadow:var(--shadow-modal);
+  }
 
   .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
   .hint.sem-margem{margin-top:0}
@@ -725,12 +749,24 @@
     .brand .brand-txt,.nav button>span:not(.ico),.nav .badge,.nav-grupo,.side-foot{display:none}
     .nav button{justify-content:center;padding:7px 4px}
     .g2,.g3,.g4,.pac-layout,.boxes,.perfis,.evo-fields{grid-template-columns:minmax(0,1fr)}
+    /* tabelas não podem estourar a tela: sem largura mínima, células quebram linha */
+    table{min-width:0}
+    table th,table td{white-space:normal}
     /* nenhum conteúdo pode empurrar a página para os lados em 375px */
     .chip{white-space:normal;max-width:100%}
     .tw{max-width:100%}
     .perfis,.boxes,.pac-layout,.grid,.g2,.g3,.g4{max-width:100%}
+    /* Pacientes no celular: alvo de toque folgado — a lista de nomes é o caminho mais batido */
+    #screen-pacientes .fsearch,
+    #screen-pacientes .agenda-head .btn,
+    #screen-pacientes .ficha-head .btn{min-height:38px}
+    #screen-pacientes .pac-nome{min-height:44px}
     .ponto-item,.fin-item,.wa-msg{flex-wrap:wrap}
     .ponto-item .dt{min-width:0}
+    /* mobile: quadro "Alertas de retorno" esconde inteiro, com título (diagramação ruim em coluna estreita) */
+    #cardAlertas{display:none}
+    /* e a agenda de hoje ocupa a linha inteira */
+    #screen-agenda > .grid.g2{grid-template-columns:minmax(0,1fr)}
     .hist-item,.ponto-item,.fin-item{max-width:100%}
     .tabs{flex-wrap:wrap;overflow-x:visible}
     .appbar .app-pc,.appbar .app-sep{display:none}
@@ -848,6 +884,8 @@
   <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.1c0 4-3.8 7.1-8.5 7.1-1 0-1.9-.14-2.8-.4L5 20.6l1.2-3.4a6.8 6.8 0 0 1-2.7-5.1C3.5 8.1 7.3 5 12 5s8.5 3.1 8.5 7.1z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></symbol>
 </svg>
 
+<div class="aviso-rede" id="avisoRede" role="status" aria-live="polite" hidden></div>
+
 <div class="login-overlay open" id="loginOverlay">
   <div class="login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitulo">
     <div class="login-cab">
@@ -859,14 +897,15 @@
     </div>
     <div class="field">
       <label for="loginUser">Usuário</label>
-      <select id="loginUser"></select>
+      <input type="text" id="loginUser" placeholder="usuário" autocomplete="username" spellcheck="false">
     </div>
     <div class="field">
       <label for="loginSenha">Senha</label>
       <input type="password" id="loginSenha" placeholder="••••••" autocomplete="current-password">
     </div>
+    <div class="hint" id="loginAviso" hidden></div>
     <button class="btn" id="btnLogin">Entrar</button>
-    <div class="demo">Demo: a senha de todos é <b>1234</b><br>Sistema local da recepção · v3.6</div>
+    <div class="demo"><b>Demonstração</b> — dados de exemplo, nada é gravado<br>Dono/dentista: <b>cesar</b> · senha <b>demo-Dental-2026</b><br>Secretária: <b>fernanda</b> · senha <b>1234</b></div>
   </div>
 </div>
 
@@ -1093,7 +1132,7 @@
           <div id="agendaSlots"></div>
           <div class="hint">Clique no cartão para abrir a ficha do paciente. Cada cartão traz telefone, idioma, valor e pendência, com as três ações do balcão.</div>
         </div>
-        <div class="card">
+        <div class="card" id="cardAlertas">
           <div class="section-title">Alertas de retorno</div>
           <div id="alertasRetorno"></div>
         </div>
@@ -1115,35 +1154,24 @@
           <div class="section-title">Lista · <span class="count" id="pacCount">6</span></div>
           <div class="tw">
           <table>
-            <thead><tr><th>Nome</th><th>Telefone</th><th>Idioma</th><th>Próxima</th><th>Saldo</th></tr></thead>
-            <tbody>
-              <tr class="row" data-patient="Ana Souza" data-busca="ana souza 5545999112233 123.456.789-00 12345678900" title="Abrir a ficha de Ana Souza">
-                <td><b>Ana Souza</b></td><td class="muted">+55 45 99911-2233</td><td>PT</td><td data-prox="Ana Souza">—</td><td class="saldo-cell" data-saldo="Ana Souza">—</td></tr>
-              <tr class="row" data-patient="João Pereira" data-busca="joao pereira joão 5545988223344 987.654.321-00 98765432100" title="Abrir a ficha de João Pereira">
-                <td><b>João Pereira</b></td><td class="muted">+55 45 98822-3344</td><td>PT</td><td data-prox="João Pereira">—</td><td class="saldo-cell" data-saldo="João Pereira">—</td></tr>
-              <tr class="row" data-patient="Maria Lima" data-busca="maria lima 5545977334455 456.789.123-00 45678912300" title="Abrir a ficha de Maria Lima">
-                <td><b>Maria Lima</b></td><td class="muted">+55 45 97733-4455</td><td>PT</td><td data-prox="Maria Lima">—</td><td class="saldo-cell" data-saldo="Maria Lima">—</td></tr>
-              <tr class="row" data-patient="Carlos Oliveira" data-busca="carlos oliveira 595981555123 1234567-8 12345678" title="Abrir a ficha de Carlos Oliveira">
-                <td><b>Carlos Oliveira</b></td><td class="muted">+595 981 555 123</td><td>ES</td><td data-prox="Carlos Oliveira">—</td><td class="saldo-cell" data-saldo="Carlos Oliveira">—</td></tr>
-              <tr class="row" data-patient="Fernanda Costa" data-busca="fernanda costa 5545966445566 321.654.987-00 32165498700" title="Abrir a ficha de Fernanda Costa">
-                <td><b>Fernanda Costa</b></td><td class="muted">+55 45 96644-5566</td><td>PT</td><td data-prox="Fernanda Costa">—</td><td class="saldo-cell" data-saldo="Fernanda Costa">—</td></tr>
-              <tr class="row" data-patient="Roberto Almeida" data-busca="roberto almeida 595981444789 7654321-0 76543210" title="Abrir a ficha de Roberto Almeida">
-                <td><b>Roberto Almeida</b></td><td class="muted">+595 981 444 789</td><td>ES</td><td data-prox="Roberto Almeida">—</td><td class="saldo-cell" data-saldo="Roberto Almeida">—</td></tr>
+            <thead><tr><th>Paciente</th></tr></thead>
+            <tbody id="pacTbody">
+              <!-- as linhas vêm de GET /api/pacientes (renderListaPacientes) -->
             </tbody>
           </table>
           </div>
-          <div class="hint">A ficha abre ao lado, sem trocar de tela. CPF e RUC funcionam na busca.</div>
+          <div class="hint">Clique no nome para abrir a ficha — telefone, idioma, próxima consulta e saldo ficam lá. A busca aceita nome, telefone, CPF e RUC.</div>
         </div>
 
         <div class="pac-ficha" id="fichaPaciente" aria-live="polite">
           <div class="ficha-head">
             <div>
-              <h2 class="day" id="prontNome">Ana Souza</h2>
-              <div class="date" id="prontInfo">Feminino · 34 anos · +55 45 99911-2233</div>
+              <h2 class="day" id="prontNome">—</h2>
+              <div class="date" id="prontInfo">Abra uma ficha para ver os dados do paciente.</div>
               <div class="ficha-chips">
                 <span class="chip" id="prontIdioma"><svg class="ic" aria-hidden="true"><use href="#i-globo"/></svg> Fala português</span>
                 <span class="chip neutro" id="prontSaldo">Quitado</span>
-                <a class="chip neutro" id="prontTel" href="tel:+5545999112233"><svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> +55 45 99911-2233</a>
+                <a class="chip neutro" id="prontTel" href="#"><svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> —</a>
               </div>
             </div>
             <div class="spacer" style="flex:1"></div>
@@ -1152,9 +1180,9 @@
           </div>
 
           <div class="card" style="margin-bottom:8px">
-            <div class="section-title">Odontograma · <span class="count" id="odontoResumo">2 tratados · 2 a tratar</span></div>
+            <div class="section-title">Odontograma · <span class="count" id="odontoResumo">nenhum dente marcado</span></div>
             <div class="teeth" id="odontoTeeth"></div>
-            <div class="hint">Escuro = já tratado · âmbar = a tratar. Clique no dente para ver o que foi feito.</div>
+            <div class="hint">Escuro = já tratado · âmbar = a tratar · azul = em andamento · vermelho = problema. Clique no dente gira pelos quatro estados e salva na ficha.</div>
           </div>
 
           <div class="tabs" role="tablist" aria-label="Seções da ficha do paciente">
@@ -1244,6 +1272,7 @@
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
               <div class="section-title" id="orcTitulo" style="margin-bottom:0">Orçamento</div>
               <div class="spacer" style="flex:1"></div>
+              <button class="btn small" id="btnNovoOrcamento"><svg class="ic" aria-hidden="true"><use href="#i-mais"/></svg> Novo orçamento</button>
               <button class="btn ghost small" id="btnImprimirOrc"><svg class="ic" aria-hidden="true"><use href="#i-print"/></svg> Imprimir</button>
               <button class="btn ghost small" id="btnEnviarOrc"><svg class="ic" aria-hidden="true"><use href="#i-enviar"/></svg> Enviar por WhatsApp</button>
               <button class="btn small" id="btnReceberOrc"><svg class="ic" aria-hidden="true"><use href="#i-receber"/></svg> Receber</button>
@@ -1255,15 +1284,27 @@
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
               <div class="section-title" id="radioTitulo" style="margin-bottom:0">Exames</div>
               <div class="spacer" style="flex:1"></div>
+              <label class="sr-only" for="exameTipo">Tipo do exame</label>
+              <select id="exameTipo" style="max-width:150px">
+                <option value="radiografia">Radiografia</option>
+                <option value="documento">Documento</option>
+                <option value="outro">Outro</option>
+              </select>
+              <input type="file" id="exameArquivo" accept="image/*,application/pdf" hidden aria-label="Escolher o arquivo do exame">
               <button class="btn" id="btnEnviarImagem"><svg class="ic" aria-hidden="true"><use href="#i-mais"/></svg> Enviar imagem</button>
             </div>
             <div id="radioGrid"></div>
-            <div class="hint">No sistema real as imagens chegam por WhatsApp ou upload e ficam presas à ficha do paciente, com data.</div>
+            <div class="hint">O arquivo escolhido sobe para o servidor da clínica e fica gravado na pasta <b>exames/</b> preso a esta ficha, com data e tipo — a lista acima é o que está no banco, não exemplo.</div>
           </div>
 
           <div class="tab-panel card" id="tab-conversas" role="tabpanel" aria-labelledby="tabbtn-conversas" tabindex="0">
             <div class="section-title">Conversas com o paciente</div>
             <div id="prontConversas" style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;margin-bottom:8px"></div>
+            <div class="wa-input" style="border-top:none;padding:0">
+              <label class="sr-only" for="prontConversasEnvio">Escrever mensagem para o paciente</label>
+              <input type="text" id="prontConversasEnvio" placeholder="Escreva em nome da clínica — a mensagem fica na ficha do paciente…">
+              <button class="btn" id="prontConversasEnviar">Enviar <svg class="ic" aria-hidden="true"><use href="#i-enviar"/></svg></button>
+            </div>
             <div class="section-title">Feedbacks do paciente</div>
             <div id="feedbackPaciente"></div>
           </div>
@@ -1370,6 +1411,7 @@
         <div class="card kpi"><div class="label">Caixa em Real</div><div class="value" id="caixaBRL">R$ 0</div><div class="delta neutral" id="caixaBRLHoje">hoje: R$ 0</div></div>
         <div class="card kpi"><div class="label">Caixa em Dólar</div><div class="value" id="caixaUSD">US$ 0</div><div class="delta neutral" id="caixaUSDHoje">hoje: US$ 0</div></div>
         <div class="card kpi"><div class="label">Caixa em Guaraní</div><div class="value" id="caixaGS">Gs 0</div><div class="delta neutral" id="caixaGSHoje">hoje: Gs 0</div></div>
+        <div class="card kpi"><div class="label">A receber (pendente)</div><div class="value" id="pendBRL">R$ 0</div><div class="delta neutral" id="pendUSD">US$ 0</div><div class="delta neutral" id="pendGS">Gs 0</div></div>
       </div>
 
       <div class="grid g2">
@@ -1405,7 +1447,9 @@
       <div class="agenda-head">
         <div>
           <h2 class="day" id="timeTitulo">Time</h2>
-          <div class="date">Equipe, ponto e pagamentos</div>
+          <div class="date">Equipe, ponto e pagamentos
+            <span class="pill wait" id="timeDemo" title="Não existe tabela de funcionários nem de ponto no banco ainda: os nomes, escalas, salários e batidas desta tela são de exemplo — não são dados reais da clínica.">demonstração · equipe e ponto ainda não vêm do banco</span>
+          </div>
         </div>
         <label class="sr-only" for="equipeBusca">Buscar funcionário</label>
         <input type="text" id="equipeBusca" class="fsearch" style="width:240px" placeholder="Buscar funcionário…">
@@ -1431,7 +1475,7 @@
           <div class="hint">Clique no nome do funcionário para abrir a ficha completa: ponto, pagamentos e privilégios.</div>
         </div>
         <div class="card">
-          <div class="section-title">Ponto de hoje · <span class="count" id="pontoHojeData">—</span></div>
+          <div class="section-title">Ponto de hoje · <span class="count" id="pontoHojeData">—</span> <span class="pill wait">demonstração</span></div>
           <div id="pontoHoje"></div>
           <div class="hint">O ponto de entrada e saída é registrado no login e no botão Sair, no topo da tela.</div>
         </div>
@@ -1558,6 +1602,19 @@
 
       <div class="grid g2" style="margin-top:8px">
         <div class="card">
+          <div class="section-title">Aguardando a secretária · <span class="count" id="humanoCount">0</span></div>
+          <div id="humanoList"></div>
+          <div class="hint">Contatos que o robô passou para uma pessoa. “Assumir” devolve a conversa ao robô depois que a secretária responde.</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Últimas conversas <span class="count">todos os pacientes</span></div>
+          <div id="ultimasConversas" style="max-height:264px;overflow:auto"></div>
+          <div class="hint">Clique numa conversa para abrir a ficha do paciente na aba Conversas.</div>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-top:8px">
+        <div class="card">
           <div class="section-title">Regras ativas do robô</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <span class="chip neutro">Nunca agenda no dia seguinte (+2 dias)</span>
@@ -1596,6 +1653,13 @@
             </label>
           </div>
           <div class="hint sem-margem" id="perfilResumo">Perfil Padrão · 25 de 26 automações ligadas.</div>
+
+          <div class="config-group" style="margin-top:10px">
+            <div class="gtitle">Robô no WhatsApp — o que fica gravado no servidor</div>
+            <div class="config-row"><div><div class="lbl">Modo do robô</div><div class="desc">Automático responde sozinho; desligado fica calado</div></div><div class="ctl"><label class="sr-only" for="cfgModo">Modo do robô</label><select id="cfgModo"><option value="auto">Automático (fluxo + IA)</option><option value="desligado">Desligado</option></select></div></div>
+            <div class="config-row"><div><div class="lbl">Horário comercial</div><div class="desc">Início e fim do atendimento do robô</div></div><div class="ctl" style="display:flex;gap:6px"><label class="sr-only" for="cfgInicio">Início do horário comercial</label><input type="time" id="cfgInicio" value="08:00"><label class="sr-only" for="cfgFim">Fim do horário comercial</label><input type="time" id="cfgFim" value="18:00"></div></div>
+            <div class="config-row"><div><div class="lbl">Mensagem de boas-vindas</div><div class="desc">Primeira resposta ao novo contato</div></div><div class="ctl" style="display:flex;gap:6px;align-items:center"><label class="sr-only" for="cfgBoasVindas">Mensagem de boas-vindas</label><input type="text" id="cfgBoasVindas" maxlength="500" value=""></div></div>
+          </div>
 
           <div class="actions" style="justify-content:flex-start;margin-top:7px">
             <button class="btn ghost" id="btnAvancado" aria-expanded="false" aria-controls="botAvancado">Mostrar ajustes avançados (26 interruptores)</button>
@@ -1744,6 +1808,26 @@
     </div>
   </div>
 </div>
+<!-- ============ NOVO PACIENTE (cadastro de verdade — QA BUG-26) ============ -->
+<div class="modal-overlay" id="modalPaciente">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="npTitulo" style="width:640px">
+    <h3 id="npTitulo">Novo paciente</h3>
+    <div class="grid g2">
+      <div class="field"><label for="npNome">Nome completo</label><input type="text" id="npNome" placeholder="ex: Ana Souza" autocomplete="off"></div>
+      <div class="field"><label for="npTel">Telefone (WhatsApp)</label><input type="text" id="npTel" placeholder="+55 45 90000-0000"></div>
+      <div class="field"><label for="npIdioma">Idioma</label><select id="npIdioma"><option value="PT">Português (BR)</option><option value="ES">Espanhol (PY)</option></select></div>
+      <div class="field"><label for="npMoeda">Moeda da ficha</label><select id="npMoeda"><option value="BRL">Real (R$)</option><option value="USD">Dólar (US$)</option><option value="GS">Guaraní (Gs)</option></select></div>
+      <div class="field"><label for="npDoc">CPF (PT) ou RUC (ES)</label><input type="text" id="npDoc" placeholder="000.000.000-00"></div>
+    </div>
+    <div id="npAviso" class="hint" hidden></div>
+    <div class="hint sem-margem">A ficha é gravada no servidor da clínica (POST /api/pacientes) e aparece na lista de pacientes.</div>
+    <div class="actions">
+      <button class="btn ghost" id="npCancel">Cancelar</button>
+      <button class="btn" id="npOk"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Cadastrar paciente</button>
+    </div>
+  </div>
+</div>
+
 <datalist id="listaPacientes">
   <option value="Ana Souza"></option><option value="João Pereira"></option><option value="Maria Lima"></option>
   <option value="Carlos Oliveira"></option><option value="Fernanda Costa"></option><option value="Roberto Almeida"></option>
@@ -1785,8 +1869,19 @@
       </div>
     </div>
     <div class="field" style="margin-top:6px">
+      <label for="recForma">Forma do pagamento</label>
+      <!-- QA BUG-30: era texto livre (a tela mandava o nome da caixa, e o campo aceitava
+           qualquer coisa). Agora é lista fechada com as quatro formas do caixa. -->
+      <select id="recForma">
+        <option value="pix" selected>Pix</option>
+        <option value="dinheiro">Dinheiro</option>
+        <option value="cartão">Cartão</option>
+        <option value="transferência">Transferência</option>
+      </select>
+    </div>
+    <div class="field" style="margin-top:6px">
       <label for="recObs">Observação (opcional)</label>
-      <input type="text" id="recObs" placeholder="ex: Pix da filha — entrada do implante">
+      <input type="text" id="recObs" maxlength="28" placeholder="ex: Pix da filha — entrada do implante">
     </div>
     <div class="actions">
       <button class="btn ghost" id="recCancel">Cancelar</button>
@@ -1837,6 +1932,31 @@
   </div>
 </div>
 
+<!-- ============ NOVO ORÇAMENTO ============ -->
+<div class="modal-overlay" id="modalOrcamento">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="orcModalTitulo" style="width:520px">
+    <h3 id="orcModalTitulo">Novo orçamento — <span id="orcModalPaciente"></span></h3>
+    <div class="grid g3">
+      <div class="field" style="grid-column:span 2">
+        <label for="orcDescricao">Procedimento</label>
+        <input type="text" id="orcDescricao" placeholder="Ex.: Restauração dente 26" data-autofocus>
+      </div>
+      <div class="field">
+        <label for="orcValor">Valor</label>
+        <input type="text" id="orcValor" placeholder="400,00">
+      </div>
+      <div class="field">
+        <label for="orcMoeda">Moeda</label>
+        <select id="orcMoeda"><option>BRL</option><option>USD</option><option>GS</option></select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="orcCancel">Cancelar</button>
+      <button class="btn" id="orcOk"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Adicionar ao orçamento</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1855,23 +1975,421 @@
     const p = precos[moeda] || precos.BRL;
     return p.simbolo + ' ' + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:p.dec, maximumFractionDigits:p.dec});
   }
+  /* Número digitado do jeito brasileiro (QA BUG-02: '150.50' virava 15050).
+     A regra, em ordem:
+       - tem ponto E vírgula -> o ponto é separador de MILHAR e a vírgula é o DECIMAL ('3.000,00' = 3000);
+       - só vírgula          -> a vírgula é o DECIMAL ('400,00' = 400);
+       - só ponto            -> ponto com 1 ou 2 dígitos depois é DECIMAL ('150.50' = 150,50; '12.5' = 12,5);
+                                ponto com 3 dígitos depois é MILHAR ('1.200' = 1200; '1.234.567' = 1234567);
+       - sem separador       -> número puro ('150' = 150). */
+  function numeroBR(s){
+    let t = String(s==null ? '' : s).replace(/[^\d.,-]/g,'');
+    const negativo = t.indexOf('-') === 0;
+    t = t.replace(/-/g,'');
+    if(!t) return 0;
+    if(t.indexOf('.') >= 0 && t.indexOf(',') >= 0){
+      t = t.replace(/\./g,'').replace(/,(?=[^,]*$)/,'.');
+    } else if(t.indexOf(',') >= 0){
+      t = t.replace(/,(?=[^,]*$)/,'.');
+    } else if(t.indexOf('.') >= 0){
+      const ultimo = t.lastIndexOf('.');
+      const decimais = t.length - ultimo - 1;
+      t = decimais <= 2 ? t.slice(0,ultimo).replace(/\./g,'') + '.' + t.slice(ultimo+1) : t.replace(/\./g,'');
+    }
+    const n = parseFloat(t);
+    if(isNaN(n)) return 0;
+    return negativo ? -n : n;
+  }
   function parseNum(s){
-    s = String(s==null?'':s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
-    const n = parseFloat(s); return isNaN(n) ? 0 : n;
+    return numeroBR(s);
   }
   const screens = ['robo','agenda','pacientes','dinheiro','equipe','funcionario','whatsapp'];
   const titles = {
     robo:'Consultas do robô', agenda:'Hoje', pacientes:'Pacientes', dinheiro:'Dinheiro',
     equipe:'Time', funcionario:'Ficha do funcionário', whatsapp:'Robô & Conversas'
   };
-  const patients = {
-    'Ana Souza':      {info:'Feminino · 34 anos · +55 45 99911-2233', tel:'+55 45 99911-2233', idioma:'PT', moeda:'BRL', orcamento:1200, pago:1200, dentes:{18:'done',26:'done',15:'todo',25:'todo'}, cpf:'123.456.789-00', rg:'12.345.678-9', comoConheceu:'indicacao', indicadoPor:'Fernanda Costa', indicacoes:2},
-    'João Pereira':   {info:'Masculino · 41 anos · +55 45 98822-3344', tel:'+55 45 98822-3344', idioma:'PT', moeda:'BRL', orcamento:400, pago:250, dentes:{26:'todo',36:'done'}, cpf:'987.654.321-00', rg:'98.765.432-1', comoConheceu:'google', indicacoes:0},
-    'Maria Lima':     {info:'Feminino · 28 anos · +55 45 97733-4455', tel:'+55 45 97733-4455', idioma:'PT', moeda:'USD', orcamento:150, pago:150, dentes:{46:'done'}, cpf:'456.789.123-00', rg:'45.678.912-3', comoConheceu:'instagram', indicacoes:1},
-    'Carlos Oliveira':{info:'Masculino · 52 anos · +595 981 555 123', tel:'+595 981 555 123', idioma:'ES', moeda:'GS', orcamento:3200000, pago:3000000, dentes:{36:'todo',37:'todo'}, ruc:'1234567-8', comoConheceu:'indicacao', indicadoPor:'Ana Souza', indicacoes:0},
-    'Fernanda Costa': {info:'Feminino · 37 anos · +55 45 96644-5566', tel:'+55 45 96644-5566', idioma:'PT', moeda:'BRL', orcamento:800, pago:800, dentes:{11:'done',21:'done'}, cpf:'321.654.987-00', rg:'32.165.498-7', comoConheceu:'whatsapp', indicacoes:0},
-    'Roberto Almeida':{info:'Masculino · 45 anos · +595 981 444 789', tel:'+595 981 444 789', idioma:'ES', moeda:'BRL', orcamento:0, pago:0, dentes:{}, ruc:'7654321-0', comoConheceu:'indicacao', indicadoPor:'Ana Souza', indicacoes:0}
+  /* ============================================================
+     CAMADA DE DADOS — a UI fala com o backend real (servidor.py).
+     api() é o único lugar que toca a rede: põe o token da sessão
+     (sessionStorage) no header Authorization e trata 401/429/503.
+     `patients` sai de GET /api/pacientes[/<id>] — não existe ficha
+     hardcoded aqui dentro.
+     ============================================================ */
+  const TOKEN_KEY = 'cd-token';
+  const USUARIO_KEY = 'cd-usuario';
+  const MENSAGEM_LICENCA = 'licença expirada, conecte à internet';
+  const patients = {};
+  let pacientesLista = [];          // GET /api/pacientes: [{id, nome, tel, cpf, ruc, rg}]
+  const finPorPaciente = {};        // GET /api/pacientes/<id>/financeiro
+  const evolucoesPorPaciente = {};  // GET /api/pacientes/<id>/evolucoes
+  let licencaAtiva = true;
+  let licencaConferida = false;
+  let usuarioLogado = null;
+
+  function token(){ try{ return sessionStorage.getItem(TOKEN_KEY) || ''; }catch(_){ return ''; } }
+  function guardarToken(t){
+    try{ t ? sessionStorage.setItem(TOKEN_KEY, t) : sessionStorage.removeItem(TOKEN_KEY); }catch(_){ }
+  }
+  function guardarUsuario(u){
+    try{ u ? sessionStorage.setItem(USUARIO_KEY, u) : sessionStorage.removeItem(USUARIO_KEY); }catch(_){ }
+  }
+  function usuarioDaSessao(){ try{ return sessionStorage.getItem(USUARIO_KEY) || ''; }catch(_){ return ''; } }
+  /* ============================================================
+     PAPÉIS (QA BUG-14) — o mesmo recorte do servidor (SETORES em servidor.py):
+     a tela esconde o que o papel não pode fazer e o servidor recusa (403) se
+     alguém tentar por fora. Recepção não vê dinheiro, financeiro não mexe em
+     prontuário, ajuste do robô é de admin/dentista e a folha da equipe é do dono.
+     ============================================================ */
+  const PAPEL_KEY = 'cd-papel';
+  const SETORES_UI = {
+    prontuario: ['admin', 'dentista', 'recepcao'],
+    atendimento: ['admin', 'dentista', 'recepcao'],
+    dinheiro: ['admin', 'financeiro'],
+    equipe: ['admin'],
+    robo: ['admin', 'dentista']
   };
+  function guardarPapel(p){ try{ p ? sessionStorage.setItem(PAPEL_KEY, p) : sessionStorage.removeItem(PAPEL_KEY); }catch(_){ } }
+  function papelAtual(){
+    if(usuarioLogado && usuarioLogado.papel) return usuarioLogado.papel;
+    try{ return sessionStorage.getItem(PAPEL_KEY) || 'recepcao'; }catch(_){ return 'recepcao'; }
+  }
+  function podeSetor(setor){ return (SETORES_UI[setor] || []).includes(papelAtual()); }
+  function aplicarPapeisNaTela(){
+    const telas = {dinheiro: 'dinheiro', equipe: 'equipe'};
+    Object.keys(telas).forEach(tela=>{
+      const b = document.querySelector('.nav button[data-screen="' + tela + '"]');
+      if(b) b.hidden = !podeSetor(telas[tela]);
+    });
+    const cfg = document.getElementById('btnBotConfig');
+    if(cfg) cfg.hidden = !podeSetor('robo');            // ajustes do robô: admin/dentista
+    ['btnReceber', 'btnReceberFicha', 'btnReceberOrc', 'btnNovoLancamento', 'btnNovoOrcamento'].forEach(id=>{
+      const b = document.getElementById(id);
+      if(b) b.hidden = !podeSetor('dinheiro');          // receber/orçamento é do financeiro
+    });
+    ['btnNovaEvolucao', 'btnNovaEvolucao2'].forEach(id=>{
+      const b = document.getElementById(id);
+      if(b) b.hidden = !podeSetor('prontuario');        // financeiro não edita prontuário
+    });
+  }
+  function esc(txt){
+    return String(txt == null ? '' : txt).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* aviso discreto no topo: rede caiu ou licença venceu — a tela não quebra */
+  function avisoRede(texto){
+    const el = document.getElementById('avisoRede');
+    if(!el) return;
+    if(!texto){ el.hidden = true; el.textContent = ''; return; }
+    el.textContent = texto;
+    el.hidden = false;
+  }
+  function mostrarAvisoLicenca(){
+    licencaAtiva = false;
+    const aviso = document.getElementById('loginAviso');
+    if(aviso){ aviso.hidden = false; aviso.textContent = 'Licença expirada, conecte à internet para voltar a usar o sistema.'; }
+    ['loginUser','loginSenha'].forEach(id=>{ const el = document.getElementById(id); if(el) el.disabled = true; });
+    const botao = document.getElementById('btnLogin');
+    if(botao) botao.disabled = true;
+    avisoRede('Licença expirada — conecte à internet para voltar a usar o sistema.');
+    const overlay = document.getElementById('loginOverlay');
+    if(overlay) overlay.classList.add('open');
+  }
+  function voltarParaLogin(){
+    guardarToken(''); guardarUsuario('');
+    guardarPapel('');                        // o papel do usuário sai junto com a sessão
+    usuarioLogado = null;
+    const botao = document.getElementById('btnLogin');
+    if(botao) botao.disabled = !licencaAtiva;
+    fecharTodosModais();
+    const overlay = document.getElementById('loginOverlay');
+    if(overlay) overlay.classList.add('open');
+  }
+
+  /* ===========================================================================
+     MODO APRESENTAÇÃO (19/10/2026) — o servidor mora AQUI dentro.
+     Esta é a MESMA tela do sistema (v3.6), mas sem depender do servidor da
+     clínica: todas as chamadas /api/... são respondidas por este bloco, com
+     dados de exemplo. Serve para mostrar ao cliente. Nada é gravado em disco.
+     =========================================================================== */
+  const _DEMO = (() => {
+    const isoDia = (off) => {
+      const d = new Date(); d.setDate(d.getDate() + off);
+      const p = n => String(n).padStart(2, '0');
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    };
+    const agora = () => {
+      const d = new Date(); const p = n => String(n).padStart(2, '0');
+      return p(d.getHours()) + ':' + p(d.getMinutes());
+    };
+    const USUARIOS = {
+      'cesar':    {senha: 'demo-Dental-2026', nome: 'Dr. Carlos',  papel: 'admin'},
+      'mariana':  {senha: 'demo-Dental-2026', nome: 'Dra. Mariana', papel: 'dentista'},
+      'fernanda': {senha: '1234', nome: 'Fernanda', papel: 'recepcao'},
+      'juliana':  {senha: '1234', nome: 'Juliana',  papel: 'recepcao'},
+      'pedro':    {senha: '1234', nome: 'Pedro',    papel: 'financeiro'}
+    };
+    let proximoId = 7;
+    const fichas = [
+      {id:1, nome:'Ana Souza',      tel:'(48) 99123-4567', sexo:'F', idade:34, idioma:'PT', moeda:'BRL', cpf:'123.456.789-00', comoConheceu:'Instagram', orcamento:1800, pago:1500, pendente:300, dentes:{'26':'tratar','36':'ok'}},
+      {id:2, nome:'João Pereira',   tel:'(48) 98812-3344', sexo:'M', idade:52, idioma:'PT', moeda:'BRL', cpf:'234.567.890-11', comoConheceu:'Indicação', orcamento:2400, pago:2400, pendente:0, dentes:{'11':'ok'}},
+      {id:3, nome:'Maria Lima',     tel:'(48) 99655-1122', sexo:'F', idade:41, idioma:'PT', moeda:'BRL', cpf:'345.678.901-22', comoConheceu:'Google', orcamento:900, pago:0, pendente:900, dentes:{}},
+      {id:4, nome:'Carlos Oliveira',tel:'+595 981 222 333', sexo:'M', idade:47, idioma:'ES', moeda:'GS', ruc:'80012345-6', comoConheceu:'WhatsApp', orcamento:1500000, pago:450000, pendente:1050000, dentes:{'46':'problema'}},
+      {id:5, nome:'Fernanda Costa', tel:'(48) 99744-8899', sexo:'F', idade:29, idioma:'PT', moeda:'BRL', cpf:'456.789.012-33', comoConheceu:'Instagram', orcamento:1200, pago:800, pendente:400, dentes:{}},
+      {id:6, nome:'Roberto Almeida',tel:'+595 981 444 555', sexo:'M', idade:60, idioma:'ES', moeda:'USD', ruc:'80098765-4', comoConheceu:'Indicação', orcamento:600, pago:300, pendente:300, dentes:{}}
+    ];
+    const orcamentos = {
+      1:[{descricao:'Limpeza + flúor', valor:250, moeda:'BRL', dente:'—'},
+         {descricao:'Restauração no 26', valor:1550, moeda:'BRL', dente:'26'}],
+      2:[{descricao:'Canal no 11', valor:2400, moeda:'BRL', dente:'11'}],
+      3:[{descricao:'Avaliação + clareamento', valor:900, moeda:'BRL', dente:'—'}],
+      4:[{descricao:'Implante (parcela 1)', valor:1500000, moeda:'GS', dente:'46'}],
+      5:[{descricao:'Clareamento a laser', valor:1200, moeda:'BRL', dente:'—'}],
+      6:[{descricao:'Prótese provisória', valor:600, moeda:'USD', dente:'—'}]
+    };
+    const evolucoes = {
+      1:[{data:isoDia(-3), procedimento:'Limpeza', profissional:'Dr. Carlos', valor:250, moeda:'BRL', observacoes:'Sensibilidade leve no 26; orientada higiene com escova macia.'}],
+      2:[{data:isoDia(-9), procedimento:'Canal no 11', profissional:'Dra. Mariana', valor:2400, moeda:'BRL', observacoes:'Canal concluído em sessão única.'}],
+      4:[{data:isoDia(-15), procedimento:'Implante — 1ª parcela', profissional:'Dr. Carlos', valor:450000, moeda:'GS', observacoes:'Paciente do PY, pagou em guaraní.'}]
+    };
+    const pagamentos = [
+      {nome:'Ana Souza',       forma:'Pix',           moeda:'BRL', valor:250,   data:isoDia(0) + ' 08:30'},
+      {nome:'João Pereira',    forma:'Cartão',        moeda:'BRL', valor:250,   data:isoDia(0) + ' 09:40'},
+      {nome:'Carlos Oliveira', forma:'Transferência', moeda:'GS',  valor:450000, data:isoDia(0) + ' 12:15'},
+      {nome:'Fernanda Costa',  forma:'Dinheiro',      moeda:'BRL', valor:800,   data:isoDia(0) + ' 16:00'},
+      {nome:'Roberto Almeida', forma:'Transferência', moeda:'USD', valor:300,   data:isoDia(-1) + ' 10:20'},
+      {nome:'João Pereira',    forma:'Pix',           moeda:'BRL', valor:600,   data:isoDia(-2) + ' 11:05'},
+      {nome:'Ana Souza',       forma:'Pix',           moeda:'BRL', valor:1250,  data:isoDia(-5) + ' 15:10'},
+      {nome:'Maria Lima',      forma:'Dinheiro',      moeda:'BRL', valor:400,   data:isoDia(-8) + ' 09:15'}
+    ];
+    const caixa = () => {
+      const hoje = isoDia(0);
+      const moedas = {};
+      ['BRL','USD','GS'].forEach(m => {
+        const linhas = pagamentos.filter(p => p.moeda === m);
+        moedas[m] = {
+          total: linhas.reduce((s,l) => s + l.valor, 0),
+          hoje: linhas.filter(l => l.data.slice(0,10) === hoje).reduce((s,l) => s + l.valor, 0),
+          pendente: fichas.filter(f => f.moeda === m).reduce((s,f) => s + (Number(f.pendente) || 0), 0)
+        };
+      });
+      return {moedas: moedas};
+    };
+    const configBot = {
+      modo: 'auto',
+      perfil: 'padrao',
+      boas_vindas: 'Olá! Aqui é a recepção da Clínica Dr. Carlos & Dra. Mariana. Como posso ajudar?',
+      horario: {inicio: '08:00', fim: '18:00'},
+      automacoes: {lembrete_24h:true, confirmacao:true, pos_consulta:true, captacao:true, indicacao:true, bilingue:true, revisao_secretaria:true}
+    };
+    return {fichas:fichas, orcamentos:orcamentos, evolucoes:evolucoes, pagamentos:pagamentos,
+            caixa:caixa, configBot:configBot, USUARIOS:USUARIOS, agora:agora, isoDia:isoDia,
+            proximoId: () => proximoId++};
+  })();
+
+  function SERVICO_LOCAL(caminho, config){
+    const responder = (dados, status) => Promise.resolve({
+      ok: (status || 200) < 400, status: status || 200,
+      json: () => Promise.resolve(dados)
+    });
+    const metodo = (config && config.method) || 'GET';
+    let corpo = {};
+    try{ corpo = config && config.body ? JSON.parse(config.body) : {}; }catch(_){ corpo = {}; }
+    const rota = String(caminho).replace(/^https?:\/\/[^/]+/, '');
+    const mId = rota.match(/^\/api\/pacientes\/(\d+)(?:\/([a-z]+))?$/);
+
+    if(rota === '/api/licenca') return responder({ativa: true, ate: '2099-12-31'});
+    if(rota === '/api/login' && metodo === 'POST'){
+      const u = _DEMO.USUARIOS[String(corpo.login || '').toLowerCase().trim()];
+      if(!u || u.senha !== corpo.senha) return responder({erro: 'usuário ou senha incorretos'}, 401);
+      return responder({token: 'demo-' + Date.now(), usuario: u.nome, papel: u.papel});
+    }
+    if(rota === '/api/logout') return responder({ok: true});
+    if(rota === '/api/pacientes' && metodo === 'GET')
+      return responder(_DEMO.fichas.map(f => ({id:f.id, nome:f.nome, tel:f.tel})));
+    if(rota === '/api/pacientes' && metodo === 'POST'){
+      const f = {id:_DEMO.proximoId(), nome:corpo.nome || 'Paciente novo', tel:corpo.telefone || '',
+                 idioma:corpo.idioma || 'PT', moeda:corpo.moeda || 'BRL',
+                 cpf:corpo.cpf || '', ruc:corpo.ruc || '', orcamento:0, pago:0, pendente:0, dentes:{}};
+      _DEMO.fichas.push(f);
+      return responder(f, 201);
+    }
+    if(mId){
+      const id = Number(mId[1]); const sub = mId[2];
+      const ficha = _DEMO.fichas.find(f => f.id === id);
+      if(!ficha) return responder({erro: 'paciente não encontrado'}, 404);
+      if(!sub && metodo === 'GET') return responder(ficha);
+      if(sub === 'financeiro' && metodo === 'GET') return responder({orcamentos: _DEMO.orcamentos[id] || []});
+      if(sub === 'evolucoes' && metodo === 'GET') return responder(_DEMO.evolucoes[id] || []);
+      if(sub === 'exames' && metodo === 'GET') return responder([]);
+      if(sub === 'dentes' && metodo === 'POST'){
+        ficha.dentes = Object.assign({}, ficha.dentes, {[corpo.dente]: corpo.estado});
+        return responder({ok: true, dentes: ficha.dentes});
+      }
+      if(metodo === 'POST' || metodo === 'PUT'){
+        if(sub === 'evolucoes'){ (_DEMO.evolucoes[id] = _DEMO.evolucoes[id] || []).unshift(
+          {data:corpo.data || _DEMO.isoDia(0), procedimento:corpo.servico || corpo.procedimento || 'Atendimento',
+           profissional:corpo.profissional || 'Dr. Carlos', valor:Number(corpo.valor) || 0,
+           moeda:ficha.moeda, observacoes:corpo.descricao || ''}); }
+        if(sub === 'orcamentos'){ (_DEMO.orcamentos[id] = _DEMO.orcamentos[id] || []).push(
+          {descricao:corpo.descricao || 'Procedimento', valor:Number(corpo.valor) || 0,
+           moeda:corpo.moeda || ficha.moeda, dente:corpo.dente || '—'}); }
+        if(sub === 'pagamentos'){
+          const val = Number(corpo.valor) || 0;
+          _DEMO.pagamentos.unshift({nome:ficha.nome, forma:corpo.forma || 'Pix',
+            moeda:corpo.moeda || ficha.moeda, valor:val, data:_DEMO.isoDia(0) + ' ' + _DEMO.agora()});
+          ficha.pago = (Number(ficha.pago) || 0) + val;
+          ficha.pendente = Math.max(0, (Number(ficha.orcamento) || 0) - ficha.pago);
+        }
+        return responder({ok: true});
+      }
+    }
+    if(rota === '/api/conversas') return responder([]);
+    if(rota.indexOf('/api/conversas/') === 0) return responder({ok: true});
+    if(rota === '/api/bot/config'){
+      if(metodo === 'PUT'){
+        Object.assign(_DEMO.configBot, corpo || {});
+        return responder(_DEMO.configBot);
+      }
+      return responder(_DEMO.configBot);
+    }
+    if(rota === '/api/pagamentos') return responder(_DEMO.pagamentos);
+    if(rota === '/api/caixa') return responder(_DEMO.caixa());
+    return responder({erro: 'rota de demonstração não existe: ' + rota}, 404);
+  }
+
+  async function api(caminho, opcoes){
+    opcoes = opcoes || {};
+    const cabecalhos = Object.assign({}, opcoes.cabecalhos || {});
+    if(!opcoes.semToken && token()) cabecalhos['Authorization'] = 'Bearer ' + token();
+    const config = { method: opcoes.metodo || 'GET', headers: cabecalhos };
+    if(opcoes.corpo !== undefined){
+      cabecalhos['Content-Type'] = 'application/json';
+      config.body = JSON.stringify(opcoes.corpo);
+    }
+    let resposta;
+    try{
+      resposta = await SERVICO_LOCAL(caminho, config);
+    }catch(falha){
+      avisoRede('Sem conexão com o servidor local — os dados na tela podem estar desatualizados.');
+      const erro = new Error('sem conexão com o servidor local');
+      erro.rede = true;
+      throw erro;
+    }
+    let dados = null;
+    try{ dados = await resposta.json(); }catch(_){ dados = null; }
+    if(resposta.ok){
+      avisoRede('');
+      return dados;
+    }
+    if(resposta.status === 401){
+      const erro = new Error((dados && dados.erro) || 'sessão expirada');
+      erro.status = 401;
+      if(opcoes.semToken) throw erro;            // erro do próprio login: só mostra a mensagem
+      voltarParaLogin();
+      erro.sessao = true;
+      avisar(erro);
+      throw erro;
+    }
+    if(resposta.status === 503){
+      mostrarAvisoLicenca();
+      const erro = new Error((dados && dados.erro) || MENSAGEM_LICENCA);
+      erro.status = 503;
+      throw erro;
+    }
+    const erro = new Error((dados && dados.erro) || ('o servidor respondeu ' + resposta.status));
+    erro.status = resposta.status;
+    throw erro;
+  }
+  function avisar(erro){
+    if(erro && erro.sessao) return;              // o 401 já avisou e reabriu o login
+    if(erro && erro.rede){ toast('Sem conexão com o servidor — a ação não foi salva'); return; }
+    toast((erro && erro.message) || 'Não deu para salvar agora');
+  }
+
+  /* ---- leitura: quem manda no conteúdo é o banco ---- */
+  function idDoPaciente(nome){
+    const local = patients[nome];
+    if(local && local.id) return local.id;
+    const achado = pacientesLista.find(r => r.nome === nome);
+    return achado ? achado.id : null;
+  }
+  function infoDaFicha(d){
+    const partes = [];
+    if(d.sexo === 'F') partes.push('Feminino');
+    else if(d.sexo === 'M') partes.push('Masculino');
+    if(d.idade) partes.push(d.idade + ' anos');
+    if(d.tel) partes.push(d.tel);
+    return partes.length ? partes.join(' · ') : 'Ficha nova — completar cadastro';
+  }
+  function aplicarFicha(d){
+    const p = patients[d.nome] || (patients[d.nome] = {});
+    Object.assign(p, {
+      id:d.id, nome:d.nome, tel:d.tel || '', sexo:d.sexo || '', idade:d.idade || null,
+      idioma:d.idioma || 'PT', moeda:d.moeda || 'BRL',
+      cpf:d.cpf || '', rg:d.rg || '', ruc:d.ruc || '',
+      comoConheceu:d.comoConheceu || '', indicadoPor:d.indicadoPor || '',
+      orcamento:Number(d.orcamento) || 0, pago:Number(d.pago) || 0,
+      pendente:Number(d.pendente) || 0, dentes:d.dentes || {},
+      info:infoDaFicha(d)
+    });
+    return p;
+  }
+  async function carregarPacientes(){
+    pacientesLista = (await api('/api/pacientes')) || [];
+    const detalhes = await Promise.all(pacientesLista.map(r => api('/api/pacientes/' + r.id).catch(()=>null)));
+    detalhes.forEach(d => { if(d) aplicarFicha(d); });
+    renderListaPacientes();
+  }
+  async function carregarFicha(id){
+    const p = aplicarFicha(await api('/api/pacientes/' + id));
+    await carregarFinanceiro(id, p.nome);
+    await carregarEvolucoes(id, p.nome);
+    await carregarExames(id, p.nome);       // QA BUG-27: a aba Exames lê o banco
+    return p;
+  }
+  async function carregarFinanceiro(id, nome){
+    const dados = await api('/api/pacientes/' + id + '/financeiro').catch(()=>null);
+    if(!dados) return null;
+    finPorPaciente[nome] = dados;
+    const itens = dados.orcamentos || [];
+    if(itens.length){
+      const p = patients[nome] || {};
+      const moeda = p.moeda || 'BRL';
+      const total = itens.reduce((s,i)=> s + (Number(i.valor) || 0), 0);
+      orcamentos[nome] = {
+        real: true,                       // veio da API: sem dado de exemplo na tela
+        status: (Number(p.pago) || 0) >= total ? 'Aprovado' : 'Aguardando',
+        itens: itens.map(i => ({proc:i.descricao, dente:i.dente || '—', valor:fmtMoeda(i.valor, i.moeda || moeda)})),
+        subtotal: fmtMoeda(total, moeda), desconto: fmtMoeda(0, moeda), total: fmtMoeda(total, moeda)
+      };
+    }
+    return dados;
+  }
+  async function carregarEvolucoes(id, nome, redesenhar){
+    const lista = await api('/api/pacientes/' + id + '/evolucoes').catch(()=>null);
+    if(!lista) return null;
+    evolucoesPorPaciente[nome] = lista;
+    if(redesenhar !== false && pacienteAtual === nome) renderEvolucoes();
+    return lista;
+  }
+  function renderListaPacientes(){
+    const tb = document.getElementById('pacTbody');
+    if(!tb) return;
+    tb.innerHTML = pacientesLista.map(r=>{
+      const p = patients[r.nome] || {};
+      const doc = p.cpf || p.ruc || p.rg || '';
+      const busca = (r.nome + ' ' + (r.tel || '') + ' ' + doc).toLowerCase();
+      /* A lista mostra só o nome: telefone, idioma, próxima consulta e saldo moram na ficha,
+         que abre no clique. O nome é um botão de verdade — o teclado chega nele. */
+      return '<tr class="row" data-patient="' + esc(r.nome) + '" data-busca="' + esc(busca) + '" title="Abrir a ficha de ' + esc(r.nome) + '">'
+        + '<td><button type="button" class="pac-nome">' + esc(r.nome) + '</button></td></tr>';
+    }).join('') || '<tr><td class="muted">Nenhuma ficha no banco ainda.</td></tr>';
+    const contador = document.getElementById('pacCount');
+    if(contador) contador.textContent = pacientesLista.length;
+    const selo = document.querySelector('.nav button[data-screen="pacientes"] .badge');
+    if(selo) selo.textContent = pacientesLista.length;
+  }
+
   const pendenteDe = p => Math.max(0, (p && p.orcamento ? p.orcamento : 0) - (p && p.pago ? p.pago : 0));
   function resumoSaldo(nome){
     const p = patients[nome] || {};
@@ -1919,15 +2437,33 @@
   let toastTimer;
   function toast(msg){
     const t = document.getElementById('toast');
+    /* QA BUG-29: o toast é um elemento só e o anterior podia ficar na tela enquanto a ação
+       nova acontecia — quem lê acaba atribuindo a mensagem velha à ação de agora. Antes de
+       mostrar o novo: para o relógio, tira o "show" (o texto antigo sai da tela na hora),
+       limpa e só então apresenta este. */
+    clearTimeout(toastTimer);
+    t.classList.remove('show');
+    t.textContent = '';
+    void t.offsetWidth;                 // força o navegador a aplicar a saída antes de reexibir
     t.textContent = msg;
     t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>t.classList.remove('show'), 1800);
+    toastTimer = setTimeout(()=>{
+      t.classList.remove('show');
+      t.textContent = '';               // nada de mensagem velha parada na tela
+    }, 1800);
   }
 
   function go(screen){
     const legado = {prontuario:'pacientes', orcamento:'dinheiro', financeiro:'dinheiro', radiografias:'pacientes', novasconsultas:'robo', novas:'robo', feedbacks:'whatsapp'};
     screen = legado[screen] || screen;
+    /* QA BUG-14: com o menu inteiro à mão, qualquer papel entrava em qualquer tela.
+       A tela esconde o que não é do papel e aqui recusa com recado claro. */
+    const setorDaTela = {dinheiro:'dinheiro', equipe:'equipe', funcionario:'equipe'};
+    if(setorDaTela[screen] && !podeSetor(setorDaTela[screen])){
+      toast('Seu papel (' + papelAtual() + ') não tem acesso a ' + (titles[screen] || screen)
+        + ' — isso é do setor ' + setorDaTela[screen]);
+      screen = 'agenda';
+    }
     screens.forEach(s=>{
       document.getElementById('screen-'+s).classList.toggle('active', s===screen);
     });
@@ -1936,6 +2472,7 @@
     });
     document.getElementById('topTitle').textContent = titles[screen];
     window.scrollTo({top:0,behavior:'smooth'});
+    if(screen === 'whatsapp' && token()) carregarPainelRobo();   // painel do robô recarrega ao entrar
   }
 
   document.querySelectorAll('.nav button').forEach(b=>{
@@ -1943,14 +2480,22 @@
   });
 
   let pacienteAtual = 'Ana Souza';
-  function openPatient(name, aba){
-    const p = patients[name];
+  async function openPatient(name, aba){
     pacienteAtual = name;
+    const id = idDoPaciente(name);
+    if(id){
+      try{
+        await carregarFicha(id);          // GET /api/pacientes/<id> (+ financeiro e evoluções)
+      }catch(erro){
+        avisar(erro);                     // 401 já devolveu o overlay de login
+      }
+    }
+    const p = patients[name];
     document.getElementById('prontNome').textContent = name;
     document.getElementById('prontInfo').textContent = (p && p.info) ? p.info : 'Ficha nova — completar cadastro';
     document.getElementById('prontIdioma').innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-globo"/></svg> Fala ' + (p && p.idioma === 'ES' ? 'espanhol' : 'português');
     const tel = document.getElementById('prontTel');
-    tel.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> ' + ((p && p.tel) ? p.tel : 'telefone não informado');
+    tel.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-fone"/></svg> ' + esc((p && p.tel) ? p.tel : 'telefone não informado');
     if(p && p.tel) tel.setAttribute('href','tel:' + p.tel.replace(/[^\d+]/g,''));
     atualizarSaldoFicha(name);
     renderOdontograma(name);
@@ -2008,6 +2553,9 @@
     });
   });
 
+  /* As colunas "próxima consulta" e "saldo" saíram da lista de pacientes (a lista mostra só o
+     nome; os dois valores aparecem na ficha): estas duas funções ficam para quem renderizar
+     essas células — hoje elas não encontram nenhum nó e não fazem nada. */
   function renderSaldos(){
     document.querySelectorAll('.saldo-cell').forEach(td=>{
       const p = patients[td.dataset.saldo] || {};
@@ -2029,6 +2577,15 @@
   }
 
   /* busca global: nome, telefone, CPF e RUC */
+  /* QA BUG-22: o Esc limpava o campo mas o dropdown continuava na tela com o resultado
+     antigo (e clicável). Agora tem um fechamento só — some, esvazia e solta o combobox —
+     e o Esc vale com o foco no campo ou em qualquer lugar da tela. */
+  function fecharBuscaGlobal(){
+    const box = document.getElementById('buscaResultados');
+    const campo = document.getElementById('buscaGlobal');
+    if(box){ box.hidden = true; box.innerHTML = ''; box.style.display = 'none'; }
+    if(campo){ campo.value = ''; campo.setAttribute('aria-expanded','false'); }
+  }
   function renderBuscaGlobal(q){
     const box = document.getElementById('buscaResultados');
     const termo = String(q||'').trim();
@@ -2036,10 +2593,11 @@
     if(!termo){ box.hidden = true; box.innerHTML = ''; campo.setAttribute('aria-expanded','false'); return; }
     const achados = Object.keys(patients).filter(n=>buscaPaciente(n, termo));
     box.innerHTML = achados.length
-      ? achados.map(n=>'<button type="button" class="res" role="option" data-ir="'+n+'">'
-          + '<span class="r-nome">'+n+'</span>'
-          + '<span class="r-meta">'+((patients[n].tel)||'')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+proximoDe(n)+' · '+resumoSaldo(n)+'</span></button>').join('')
+      ? achados.map(n=>'<button type="button" class="res" role="option" data-ir="'+esc(n)+'">'
+          + '<span class="r-nome">'+esc(n)+'</span>'
+          + '<span class="r-meta">'+esc((patients[n].tel)||'')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+esc(proximoDe(n))+' · '+esc(resumoSaldo(n))+'</span></button>').join('')
       : '<div class="busca-vazia">Nenhuma ficha com esse nome, CPF ou RUC. Use “Novo paciente”.</div>';
+    box.style.display = '';              // o fechamento deixou display:none — reabrir devolve
     box.hidden = false;
     campo.setAttribute('aria-expanded','true');
   }
@@ -2047,7 +2605,10 @@
   buscaGlobal.addEventListener('input', e=>renderBuscaGlobal(e.target.value));
   buscaGlobal.addEventListener('keydown', e=>{
     if(e.key === 'Enter'){ const p = document.querySelector('#buscaResultados .res'); if(p) p.click(); }
-    if(e.key === 'Escape'){ document.getElementById('buscaResultados').hidden = true; buscaGlobal.value = ''; }
+    if(e.key === 'Escape') fecharBuscaGlobal();
+  });
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'Escape' && !document.getElementById('buscaResultados').hidden) fecharBuscaGlobal();
   });
   document.getElementById('buscaResultados').addEventListener('click', e=>{
     const b = e.target.closest('[data-ir]');
@@ -2081,42 +2642,58 @@
   }
   document.getElementById('relCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalRelatorio')));
   document.getElementById('modalRelatorio').addEventListener('click', e=>{ if(e.target===document.getElementById('modalRelatorio')) fecharModal(document.getElementById('modalRelatorio')); });
-  const evolucoesSeed = [
-    {off:-3, esp:'odonto', servico:'Limpeza + profilaxia', prof:'Dra. Mariana', valor:'R$ 250,00', dentes:'Todos (14–24 e 34–44)', materiais:'Pasta profilática, flúor gel',
-     desc:'Remoção de cálculo supragengival, profilaxia com pasta e aplicação tópica de flúor. Paciente sem sensibilidade.',
-     obs:'Retorno para manutenção em 6 meses.', anexos:[['exame','1 radiografia'],['camera','2 fotos']]},
-    {off:-9, esp:'odonto', servico:'Restauração dente 26', prof:'Dr. Carlos', valor:'R$ 400,00', dentes:'26 (oclusal)', materiais:'Resina composta, anestesia local',
-     desc:'Remoção de cárie, isolamento, aplicação de resina em camadas e fotopolimerização. Ajuste oclusal.',
-     obs:'Paciente orientado a evitar alimentos duros por 24h.', anexos:[['exame','1 periapical']]},
-    {off:-21, esp:'odonto', servico:'Avaliação inicial', prof:'Dr. Carlos', valor:'R$ 150,00', dentes:'Avaliação completa', materiais:'—',
-     desc:'Exame clínico geral, radiografia panorâmica e montagem do plano de tratamento.',
-     obs:'Necessário restauração no 26 e limpeza. Orçamento enviado.', anexos:[['exame','1 panorâmica']]}
-  ];
+  /* As evoluções de exemplo que ficavam aqui saíram (QA BUG-20): a ficha mostra o que
+     está no banco — e quando não há nada, mostra que não há nada. */
+
+  function evolucoesDoPaciente(){
+    const reais = evolucoesPorPaciente[pacienteAtual];
+    /* QA BUG-20: ficha sem evolução mostrava 3 atendimentos de exemplo (datas relativas
+       de mentira) como se fossem do paciente. Vazio de verdade é vazio. */
+    return (reais || []).map(e=>({
+      data: String(e.data || '').slice(0,10).split('-').reverse().join('/'),
+      esp:'odonto',
+      servico: e.procedimento || 'Atendimento',
+      prof: e.profissional || '—',
+      valor:'—',
+      dentes: e.dente ? 'Dente ' + e.dente : '—',
+      materiais:'—',
+      desc: e.texto || '—',
+      obs:'—',
+      anexos:[]
+    }));
+  }
   function renderEvolucoes(){
     const tb = document.getElementById('evoTbody');
     tb.innerHTML = '';
-    evolucoesSeed.forEach((e,i)=>{
+    const lista = evolucoesDoPaciente();
+    if(!lista.length){
+      /* QA BUG-20: nada de evolução inventada — a ficha diz que está vazia. */
+      tb.innerHTML = '<tr class="evo-vazia"><td colspan="5">Nenhuma evolução registrada nesta ficha. O que aparece aqui vem do banco: use “Nova evolução” para escrever o primeiro atendimento.</td></tr>';
+      return;
+    }
+    lista.forEach((e,i)=>{
       const id = 'evo' + (i+1);
+      const data = e.data || dma(e.off);
       const row = document.createElement('tr');
       row.className = 'evo-row';
       row.dataset.evo = id;
       row.dataset.esp = e.esp;
       row.tabIndex = 0;
-      row.innerHTML = '<td><span class="chev"><svg class="ic" aria-hidden="true"><use href="#i-dir"/></svg></span></td><td>' + dma(e.off) + '</td><td>' + e.servico + '</td><td>' + e.prof + '</td><td><span class="pill">' + e.valor + '</span></td>';
+      row.innerHTML = '<td><span class="chev"><svg class="ic" aria-hidden="true"><use href="#i-dir"/></svg></span></td><td>' + esc(data) + '</td><td>' + esc(e.servico) + '</td><td>' + esc(e.prof) + '</td><td><span class="pill">' + esc(e.valor) + '</span></td>';
       const detail = document.createElement('tr');
       detail.className = 'evo-detail';
       detail.id = id;
       detail.innerHTML = '<td colspan="5"><div class="evo-box">'
-        + '<div class="ev-title"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg> Prontuário do dia — ' + dma(e.off) + '</div>'
+        + '<div class="ev-title"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg> Prontuário do dia — ' + esc(data) + '</div>'
         + '<div class="evo-fields">'
-        + '<div class="f"><span class="k">Procedimento</span><span class="v">' + e.servico + '</span></div>'
-        + '<div class="f"><span class="k">Profissional</span><span class="v">' + e.prof + '</span></div>'
-        + '<div class="f"><span class="k">Dentes envolvidos</span><span class="v">' + e.dentes + '</span></div>'
-        + '<div class="f"><span class="k">Materiais</span><span class="v">' + e.materiais + '</span></div>'
+        + '<div class="f"><span class="k">Procedimento</span><span class="v">' + esc(e.servico) + '</span></div>'
+        + '<div class="f"><span class="k">Profissional</span><span class="v">' + esc(e.prof) + '</span></div>'
+        + '<div class="f"><span class="k">Dentes envolvidos</span><span class="v">' + esc(e.dentes) + '</span></div>'
+        + '<div class="f"><span class="k">Materiais</span><span class="v">' + esc(e.materiais) + '</span></div>'
         + '</div>'
-        + '<div class="evo-notes"><b>Descrição:</b> ' + e.desc + '</div>'
-        + '<div class="evo-notes"><b>Observações:</b> ' + e.obs + '</div>'
-        + '<div class="evo-attach">' + e.anexos.map(a=>'<span class="chip"><svg class="ic" aria-hidden="true"><use href="#i-' + a[0] + '"/></svg> ' + a[1] + '</span>').join('') + '</div>'
+        + '<div class="evo-notes"><b>Descrição:</b> ' + esc(e.desc) + '</div>'
+        + '<div class="evo-notes"><b>Observações:</b> ' + esc(e.obs) + '</div>'
+        + '<div class="evo-attach">' + e.anexos.map(a=>'<span class="chip"><svg class="ic" aria-hidden="true"><use href="#i-' + esc(a[0]) + '"/></svg> ' + esc(a[1]) + '</span>').join('') + '</div>'
         + '</div></td></tr>';
       tb.appendChild(row); tb.appendChild(detail);
     });
@@ -2130,12 +2707,19 @@
   renderEvolucoes();
 
   /* ficha: odontograma, histórico financeiro e conversas */
-  const dentesFDI = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
-  const historicoFin = [
-    {dia:-3, desc:'Limpeza + profilaxia', forma:'Pix', valor:250},
-    {dia:-9, desc:'Restauração dente 26', forma:'Pix', valor:400},
-    {dia:-21, desc:'Avaliação inicial', forma:'Cartão', valor:150}
-  ];
+  /* As 32 peças do FDI: arcada de cima 18→11 e 21→28, arcada de baixo 48→41 e 31→38.
+     QA BUG-19: só existiam as 16 de cima — a clínica não tinha onde marcar o molar de baixo. */
+  const dentesFDI = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28,
+                     48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
+  /* Os quatro estados que a API aceita em POST /api/pacientes/<id>/dentes — a mesma lista
+     de servidor.py (ESTADOS_DENTE). QA BUG-18: a tela só desenhava todo/done e o clique
+     passava só por dois deles, então o estado gravado voltava invisível. */
+  const ESTADOS_DENTE = ['todo', 'done', 'em_andamento', 'problema'];
+  const ROTULO_DENTE = {todo:'a tratar', done:'tratado', em_andamento:'em andamento', problema:'problema'};
+  const CLASSE_DENTE = {todo:'todo', done:'done', em_andamento:'andamento', problema:'problema'};
+  /* Os exemplos de evolução e de recebimento que existiam aqui saíram (QA BUG-20): a
+     ficha mostra o que está no banco e, quando não há nada, diz que não há nada. */
+
   function emReais(valor, moeda){
     const v = Number(valor)||0;
     if(moeda === 'USD') return v * cotacao.usdBRL;
@@ -2151,38 +2735,134 @@
     const p = patients[nome] || {};
     const mapa = p.dentes || {};
     const el = document.getElementById('odontoTeeth');
-    el.innerHTML = dentesFDI.map(d=>{
-      const cls = mapa[d] === 'done' ? ' done' : mapa[d] === 'todo' ? ' todo' : '';
-      const est = mapa[d] === 'done' ? ' — tratado' : mapa[d] === 'todo' ? ' — a tratar' : '';
-      return '<button type="button" class="tooth' + cls + '" data-dente="' + d + '" aria-label="Dente ' + d + est + '">' + d + '</button>';
+    el.innerHTML = dentesFDI.map((d, i)=>{
+      const estado = mapa[d];
+      const cls = CLASSE_DENTE[estado];                 // todo/done/em_andamento/problema
+      const est = ROTULO_DENTE[estado] ? ' — ' + ROTULO_DENTE[estado] : '';
+      const quebra = (i === 16) ? '<span class="quebra-arcada" aria-hidden="true"></span>' : '';
+      return quebra + '<button type="button" class="tooth' + (cls ? ' ' + cls : '') + '" data-dente="' + d
+        + '" data-estado="' + (estado || '') + '" aria-label="Dente ' + d + est + '">' + d + '</button>';
     }).join('');
-    const done = Object.keys(mapa).filter(k=>mapa[k] === 'done').length;
-    const todo = Object.keys(mapa).filter(k=>mapa[k] === 'todo').length;
-    document.getElementById('odontoResumo').textContent = done + ' tratado(s) · ' + todo + ' a tratar';
+    const contagem = ESTADOS_DENTE
+      .map(e=>({rotulo: ROTULO_DENTE[e], n: Object.keys(mapa).filter(k=>mapa[k] === e).length}))
+      .filter(c=>c.n > 0);
+    document.getElementById('odontoResumo').textContent = contagem.length
+      ? contagem.map(c=>c.n + ' ' + c.rotulo).join(' · ')
+      : 'nenhum dente marcado';
   }
-  document.getElementById('odontoTeeth').addEventListener('click', e=>{
+  document.getElementById('odontoTeeth').addEventListener('click', async e=>{
     const b = e.target.closest('[data-dente]');
     if(!b) return;
     const d = +b.dataset.dente;
-    const mapa = (patients[pacienteAtual] || {}).dentes || {};
-    const est = mapa[d] === 'done' ? 'já tratado' : mapa[d] === 'todo' ? 'com tratamento a fazer' : 'sem tratamento registrado';
-    toast('Dente ' + d + ' — ' + est + '. A evolução completa fica na aba Prontuário.');
+    const p = patients[pacienteAtual] || {};
+    const mapa = p.dentes || (p.dentes = {});
+    const anterior = mapa[d];
+    /* o clique gira pelos quatro estados da API (QA BUG-18); dente novo entra como 'done' */
+    const posicao = ESTADOS_DENTE.indexOf(anterior);
+    const novo = posicao < 0 ? 'done' : ESTADOS_DENTE[(posicao + 1) % ESTADOS_DENTE.length];
+    if(!p.id){
+      toast('Dente ' + d + ' — abra a ficha de um paciente antes de marcar.');
+      return;
+    }
+    b.disabled = true;
+    try{
+      await api('/api/pacientes/' + p.id + '/dentes', {metodo:'POST', corpo:{dente:String(d), estado:novo}});
+      mapa[d] = novo;
+      renderOdontograma(pacienteAtual);
+      toast('Dente ' + d + ' — ' + ROTULO_DENTE[novo] + ' (salvo na ficha)');
+    }catch(erro){
+      if(anterior === undefined) delete mapa[d]; else mapa[d] = anterior;
+      avisar(erro);
+    }finally{
+      b.disabled = false;
+    }
   });
   function renderHistoricoFinanceiro(nome){
     const p = patients[nome] || {};
     const moeda = p.moeda || 'BRL';
     const tb = document.getElementById('histFinTbody');
-    tb.innerHTML = historicoFin.map(x=>{
-      const valor = moeda === 'BRL' ? x.valor : deReais(x.valor, moeda);
-      return '<tr><td>' + dma(x.dia) + '</td><td>' + x.desc + '</td><td>' + x.forma + '</td><td class="mono"><span class="pill">' + fmtMoeda(valor, moeda) + '</span></td><td><span class="quit" style="font-weight:600">Pago</span></td></tr>';
+    const reais = finPorPaciente[nome] && finPorPaciente[nome].pagamentos;
+    if(reais && reais.length){
+      tb.innerHTML = reais.map(x=>{
+        const dia = String(x.data || '').slice(0,10).split('-').reverse().join('/');
+        return '<tr><td>' + dia + '</td><td>Recebimento — ' + esc(x.forma || 'caixa') + '</td><td>' + esc(x.forma || '—') + '</td><td class="mono"><span class="pill">' + fmtMoeda(x.valor, x.moeda || moeda) + '</span></td><td><span class="quit" style="font-weight:600">Pago</span></td></tr>';
+      }).join('');
+      return;
+    }
+    /* QA BUG-20: sem recebimento no banco a ficha mostrava três recebimentos de exemplo
+       (Pix/cartão) que nunca entraram no caixa. Agora diz que está vazio. */
+    tb.innerHTML = '<tr class="fin-vazia"><td colspan="5">Nenhum recebimento registrado para este paciente. Os valores aparecem aqui depois do primeiro “Receber”.</td></tr>';
+  }
+  /* Conversas: uma fonte só — GET /api/conversas. A API devolve tudo (todos os
+     pacientes, mais novo primeiro); quem separa por paciente é a tela. */
+  let conversasApi = [];
+
+  function nomeDoPacienteId(id){
+    const achado = pacientesLista.find(r => r.id === id);
+    return achado ? achado.nome : '';
+  }
+  function conversasDoPaciente(id){
+    return conversasApi.filter(c => c.paciente_id === id);
+  }
+  function quandoConversa(data){
+    const bruto = String(data == null ? '' : data);
+    const dia = bruto.slice(0, 10).split('-').reverse().join('/');
+    const hora = bruto.slice(11, 16);
+    return (dia && dia !== '//' ? dia + ' ' : '') + hora;
+  }
+  function emOrdemDeConversa(lista){
+    return lista.slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+  }
+  function bolhasConversa(lista, quemFala){
+    if(!lista.length) return '<div class="hint sem-margem">Nenhuma conversa registrada com este paciente.</div>';
+    return emOrdemDeConversa(lista).map(c=>{
+      const recebida = c.direcao === 'recebida';
+      return '<div class="conversa-msg ' + (recebida ? 'in' : 'out') + '"><b>'
+        + (recebida ? 'Paciente' : esc(quemFala)) + ' (' + esc(quandoConversa(c.data)) + '):</b> '
+        + esc(c.texto) + '</div>';
     }).join('');
   }
-  function renderConversasPaciente(nome){
+
+  async function renderConversasPaciente(nome){
     const el = document.getElementById('prontConversas');
-    const chat = waChats[nome];
-    if(!chat){ el.innerHTML = '<div class="hint sem-margem">Nenhuma conversa registrada com este paciente.</div>'; return; }
-    el.innerHTML = chat.msgs.map(m=>'<div class="conversa-msg ' + (m.dir === 'in' ? 'in' : 'out') + '"><b>' + (m.dir === 'in' ? 'Paciente' : 'Robô') + ' (' + m.h + '):</b> ' + m.t + '</div>').join('');
+    if(!el) return;
+    el.innerHTML = '<div class="hint sem-margem">Carregando conversas…</div>';
+    try{
+      conversasApi = (await api('/api/conversas')) || [];
+    }catch(erro){
+      el.innerHTML = '<div class="hint sem-margem">Não deu para carregar as conversas agora.</div>';
+      avisar(erro);
+      return;
+    }
+    const id = idDoPaciente(nome);
+    el.innerHTML = bolhasConversa(id ? conversasDoPaciente(id) : [], 'Recepção');
   }
+
+  /* a secretária escreve pela ficha: grava no prontuário e o servidor tenta mandar */
+  async function enviarMensagemPaciente(){
+    const campo = document.getElementById('prontConversasEnvio');
+    const botao = document.getElementById('prontConversasEnviar');
+    const texto = (campo.value || '').trim();
+    const id = idDoPaciente(pacienteAtual);
+    if(!id){ toast('Abra a ficha de um paciente cadastrado para escrever.'); return; }
+    if(!texto){ toast('Escreva a mensagem antes de enviar.'); return; }
+    botao.disabled = true;
+    try{
+      const r = await api('/api/conversas', {metodo:'POST', corpo:{paciente_id:id, texto:texto}});
+      campo.value = '';
+      await renderConversasPaciente(pacienteAtual);
+      if(r && r.enviado) toast('Mensagem enviada pelo WhatsApp para ' + pacienteAtual + '.');
+      else toast('Mensagem guardada na ficha — não saiu pelo WhatsApp (' + ((r && r.motivo) || 'sem envio') + ').');
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
+  }
+  document.getElementById('prontConversasEnviar').addEventListener('click', enviarMensagemPaciente);
+  document.getElementById('prontConversasEnvio').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') enviarMensagemPaciente();
+  });
 
   // Dropdowns dinâmicos (área -> serviço -> local)
   const catalogo = {
@@ -2256,6 +2936,7 @@
   const ncServico = document.getElementById('ncServico');
   const ncLocal = document.getElementById('ncLocal');
   let ncRemarcando = null;
+  let ncFilaOrigem = null;      // índice na fila do robô quando o 'Corrigir' veio de lá (QA BUG-12)
 
   function preencherNC(){
     preencher(ncServico, catalogo[ncArea.value].servicos);
@@ -2269,7 +2950,7 @@
     if(!termo){ box.hidden = true; box.innerHTML = ''; return; }
     const achados = Object.keys(patients).filter(n=>buscaPaciente(n, termo));
     box.innerHTML = achados.length
-      ? achados.map(n=>'<button type="button" class="res" role="option" data-escolher="'+n+'"><span class="r-nome">'+n+'</span><span class="r-meta">'+((patients[n].tel)||'sem telefone')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+resumoSaldo(n)+'</span></button>').join('')
+      ? achados.map(n=>'<button type="button" class="res" role="option" data-escolher="'+esc(n)+'"><span class="r-nome">'+esc(n)+'</span><span class="r-meta">'+esc((patients[n].tel)||'sem telefone')+' · '+(patients[n].idioma === 'ES' ? 'espanhol' : 'português')+' · '+esc(resumoSaldo(n))+'</span></button>').join('')
       : '<div class="busca-vazia">Nenhuma ficha com esse nome. Use “criar ficha nova”.</div>';
     box.hidden = false;
   }
@@ -2303,6 +2984,7 @@
     opcoes = opcoes || {};
     preencherNC();
     ncRemarcando = opcoes.remarcar || null;
+    ncFilaOrigem = (opcoes.fila === undefined || opcoes.fila === null) ? null : opcoes.fila;
     document.getElementById('ncTitulo').textContent = ncRemarcando ? 'Remarcar consulta' : 'Nova consulta';
     document.getElementById('ncOk').textContent = ncRemarcando ? 'Salvar novo horário' : 'Agendar';
     document.getElementById('ncBuscaPaciente').value = '';
@@ -2321,7 +3003,7 @@
   document.getElementById('ncCancel').addEventListener('click', ()=>fecharModal(modalConsulta));
   modalConsulta.addEventListener('click', e=>{ if(e.target === modalConsulta) fecharModal(modalConsulta); });
 
-  document.getElementById('ncOk').addEventListener('click', ()=>{
+  document.getElementById('ncOk').addEventListener('click', async ()=>{
     const novaFicha = document.getElementById('ncNovoCampos').style.display !== 'none';
     let nome = document.getElementById('ncPaciente').value.trim();
     if(novaFicha) nome = document.getElementById('ncNovoNome').value.trim();
@@ -2335,23 +3017,30 @@
     const hora = document.getElementById('ncHora').value || '--:--';
     const diaOff = diasAte(dataEscolhida);
     const servico = ncServico.value || 'Consulta';
+    let avisoFicha = '';                    // o aviso do cadastro sobrevive até o toast final
 
     if(novaFicha && !patients[nome]){
       const tel = document.getElementById('ncNovoTel').value.trim();
       const doc = document.getElementById('ncNovoDoc').value.trim();
       const idioma = document.getElementById('ncNovoIdioma').value === 'es' ? 'ES' : 'PT';
-      patients[nome] = {info:'Ficha nova · ' + (tel || 'telefone a confirmar'), tel:tel, idioma:idioma, moeda:'BRL', orcamento:0, pago:0, dentes:{},
-        cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : '', comoConheceu:'', indicacoes:0};
-      const tb = document.querySelector('#screen-pacientes table tbody');
-      const tr = document.createElement('tr');
-      tr.className = 'row';
-      tr.dataset.patient = nome;
-      tr.title = 'Abrir a ficha de ' + nome;
-      tr.innerHTML = '<td><b>' + nome + '</b></td><td class="muted">' + (tel || '—') + '</td><td>' + idioma + '</td><td data-prox="' + nome + '">—</td><td class="saldo-cell" data-saldo="' + nome + '">—</td>';
-      tb.appendChild(tr);
-      renderSaldos(); renderProximas();
-      document.getElementById('pacCount').textContent = Object.keys(patients).length;
-      toast('Ficha criada para ' + nome);
+      try{
+        const novo = await api('/api/pacientes', {metodo:'POST', corpo:{
+          nome:nome, tel:tel, idioma:idioma,
+          cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : ''
+        }});
+        patients[nome] = {id:novo.id, nome:nome, tel:tel, idioma:idioma, moeda:'BRL', orcamento:0, pago:0, pendente:0,
+          dentes:{}, cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : '',
+          comoConheceu:'', info:'Ficha nova · ' + (tel || 'telefone a confirmar')};
+        await carregarPacientes();          // a lista volta do banco — nada de ficha-fantasma
+        /* QA BUG-16: telefone estranho ou já usado por outra ficha não bloqueia o balcão,
+           mas a recepção precisa saber (o robô casa o contato pelo telefone). O aviso vai
+           no toast FINAL: o toast é um elemento só e o do agendamento viria por cima. */
+        avisoFicha = novo.aviso ? ' — ATENÇÃO: ' + novo.aviso : '';
+        toast('Ficha criada para ' + nome + ' (salva no banco)' + avisoFicha);
+      }catch(erro){
+        avisar(erro);                       // 401/429/503 do backend aparecem pro usuário
+        return;
+      }
     }
 
     if(ncRemarcando){
@@ -2359,16 +3048,77 @@
       ncRemarcando.dia = diaOff;
       ncRemarcando.proc = servico;
       ncRemarcando.status = 'confirmado';
-      toast('Consulta de ' + nome + ' remarcada para ' + dma(diaOff) + ' às ' + hora);
+      if(ncFilaOrigem !== null){
+        /* QA BUG-12: 'Corrigir' na fila do robô criava uma consulta nova e deixava a
+           antiga na fila (duas consultas para a mesma pessoa). Agora a consulta sai da
+           fila e entra na agenda uma única vez. */
+        agendamentos.push({nome:nome, proc:servico, hora:hora, dia:diaOff, status:'confirmado'});
+        const pos = novasConsultas.indexOf(ncRemarcando);
+        if(pos >= 0) novasConsultas.splice(pos, 1);
+        ncFilaOrigem = null;
+        renderNovas();
+      }
+      toast('Consulta de ' + nome + ' remarcada para ' + dma(diaOff) + ' às ' + hora + avisoFicha);
       ncRemarcando = null;
     } else {
       agendamentos.push({nome:nome, proc:servico, hora:hora, dia:diaOff, status:'aguardando'});
-      toast('Consulta agendada: ' + nome + ' em ' + dma(diaOff) + ' às ' + hora);
+      toast('Consulta agendada: ' + nome + ' em ' + dma(diaOff) + ' às ' + hora + avisoFicha);
     }
     fecharModal(modalConsulta);
     diaAtual = diaOff;
     renderAgenda();
     renderProximas();
+  });
+
+  // ===== Cadastro de paciente de verdade (QA BUG-26) =====
+  /* Antes, o item de menu "Novo paciente…", o botão da lista e o Ctrl+N abriam o modal de
+     NOVA CONSULTA (agendamento): quem só queria cadastrar caía na agenda e a ficha nascia
+     como efeito colateral. Agora é formulário próprio, gravando em POST /api/pacientes. */
+  const modalPaciente = document.getElementById('modalPaciente');
+  function abrirNovoPaciente(){
+    ['npNome','npTel','npDoc'].forEach(id=>{ document.getElementById(id).value = ''; });
+    document.getElementById('npIdioma').value = 'PT';
+    document.getElementById('npMoeda').value = 'BRL';
+    const aviso = document.getElementById('npAviso');
+    aviso.hidden = true; aviso.textContent = '';
+    abrirModal(modalPaciente);
+    setTimeout(()=>{ try{ document.getElementById('npNome').focus(); }catch(_){} }, 40);
+  }
+  document.getElementById('npCancel').addEventListener('click', ()=>fecharModal(modalPaciente));
+  modalPaciente.addEventListener('click', e=>{ if(e.target === modalPaciente) fecharModal(modalPaciente); });
+  document.getElementById('npOk').addEventListener('click', async ()=>{
+    const nome = document.getElementById('npNome').value.trim();
+    const aviso = document.getElementById('npAviso');
+    if(nome.length < 2){
+      aviso.hidden = false;
+      aviso.textContent = 'Digite o nome completo do paciente (pelo menos 2 letras).';
+      document.getElementById('npNome').focus();
+      toast('Faltou o nome do paciente — a ficha não foi criada');
+      return;
+    }
+    const tel = document.getElementById('npTel').value.trim();
+    const doc = document.getElementById('npDoc').value.trim();
+    const idioma = document.getElementById('npIdioma').value === 'ES' ? 'ES' : 'PT';
+    const moeda = document.getElementById('npMoeda').value;
+    const botao = document.getElementById('npOk');
+    botao.disabled = true;
+    try{
+      const novo = await api('/api/pacientes', {metodo:'POST', corpo:{
+        nome:nome, tel:tel, idioma:idioma, moeda:moeda,
+        cpf: idioma === 'PT' ? doc : '', ruc: idioma === 'ES' ? doc : ''
+      }});
+      await carregarPacientes();                 // a lista volta do banco
+      fecharModal(modalPaciente);
+      /* QA BUG-16: telefone estranho ou repetido não bloqueia o balcão, mas a recepção
+         precisa saber — o aviso do servidor vem junto do "criada". */
+      toast('Ficha de ' + nome + ' criada (salva no banco)'
+            + (novo.aviso ? ' — ATENÇÃO: ' + novo.aviso : ''));
+      if(patients[nome]) await openPatient(nome, 'resumo');
+    }catch(erro){
+      avisar(erro);                              // 401/429/503 do backend aparecem na tela
+    }finally{
+      botao.disabled = false;
+    }
   });
 
   // ===== Nova evolução =====
@@ -2382,7 +3132,7 @@
   document.getElementById('evoCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalEvolucao')));
   document.getElementById('modalEvolucao').addEventListener('click', e=>{ if(e.target===document.getElementById('modalEvolucao')) fecharModal(document.getElementById('modalEvolucao')); });
 
-  document.getElementById('btnSalvarEvolucao').addEventListener('click', ()=>{
+  document.getElementById('btnSalvarEvolucao').addEventListener('click', async ()=>{
     const raw = document.getElementById('evoData').value || iso(0);
     const data = raw.split('-').reverse().join('/');
     const servico = servicoSel.value;
@@ -2395,6 +3145,30 @@
     const posTexto = posInstrucoes[servico] || '';
     const posDisparar = document.getElementById('posDisparar').checked;
     const id = 'evo' + Date.now();
+
+    /* grava primeiro no banco (POST /api/pacientes/<id>/evolucoes) */
+    const ficha = patients[pacienteAtual] || {};
+    if(!ficha.id){
+      toast('Abra a ficha do paciente antes de salvar a evolução');
+      return;
+    }
+    const casou = /Dente (\d{2})/.exec(local);
+    const botaoSalvar = document.getElementById('btnSalvarEvolucao');
+    botaoSalvar.disabled = true;
+    try{
+      await api('/api/pacientes/' + ficha.id + '/evolucoes', {metodo:'POST', corpo:{
+        procedimento: servico,
+        texto: (desc === '—' ? servico : desc) + (face ? ' (face ' + face + ')' : ''),
+        dente: casou ? casou[1] : '',
+        profissional: prof
+      }});
+      await carregarEvolucoes(ficha.id, pacienteAtual, false);   // atualiza a memória, sem redesenhar a linha nova
+    }catch(erro){
+      avisar(erro);
+      botaoSalvar.disabled = false;
+      return;
+    }
+    botaoSalvar.disabled = false;
 
     const row = document.createElement('tr');
     row.className = 'evo-row';
@@ -2505,19 +3279,28 @@
   });
 
   document.getElementById('fVoltar').addEventListener('click', ()=>go('equipe'));
-  document.getElementById('pDetalhe').addEventListener('click', ()=>{
+  /* QA BUG-25: "Detalhes" e o "Salvar" leem funcAtual — sem funcionário escolhido o clique
+     estourava TypeError no console. Aqui a checagem é a mesma do Salvar: avisa e sai. */
+  function abrirDetalhesFuncionario(){
+    if(!funcAtual){ toast('Escolha um funcionário na lista do Time antes de abrir os detalhes do pagamento'); return; }
     abrirPag(funcAtual.nome);
-  });
+  }
+  document.getElementById('pDetalhe').addEventListener('click', abrirDetalhesFuncionario);
 
   document.getElementById('fSave').addEventListener('click', ()=>{
-    if(funcAtual && !funcAtual.admin){
+    if(!funcAtual){ toast('Escolha um funcionário na lista do Time antes de salvar'); return; }
+    /* QA BUG-06: no ADMIN o formulário é read-only e o toast dizia "salvo" sem salvar
+       nada. Agora o que a tela deixa editar (cargo, escala, salário, status) é salvo
+       para todo mundo — admin inclusive — e o toast só sai depois de salvar. */
+    if(!funcAtual.admin){
       funcAtual.privs = [...document.querySelectorAll('#fPrivs input:checked')].map(c=>c.value);
       funcAtual.cargo = document.getElementById('fCargo').value;
-      funcAtual.escala = document.getElementById('fEscala').value;
-      funcAtual.salario = document.getElementById('fSalario').value;
-      funcAtual.status = document.getElementById('fStatus').value;
-      renderFunc();
     }
+    funcAtual.escala = document.getElementById('fEscala').value;
+    funcAtual.salario = document.getElementById('fSalario').value;
+    funcAtual.status = document.getElementById('fStatus').value;
+    renderFunc();
+    document.getElementById('fCargoLabel').textContent = funcAtual.cargo + (funcAtual.admin ? ' · acesso total' : '');
     toast('Alterações salvas para ' + funcAtual.nome);
   });
 
@@ -2527,10 +3310,11 @@
 
   // ===== Pagamentos / folha =====
   let pagAtual = null;
+  /* Valor em dinheiro digitado pela recepção: o 'R$' e os espaços caem fora e o resto
+     segue a mesma regra do numeroBR (então '150.50' é cento e cinquenta e cinquenta).
+     QA BUG-02: antes todo ponto era tratado como milhar e '150.50' virava 15050. */
   function parseValor(s){
-    s = String(s).replace(/R\$\s?/i,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
-    const n = parseFloat(s);
-    return isNaN(n) ? 0 : n;
+    return numeroBR(s);
   }
   function agora(){
     const d = new Date();
@@ -2605,10 +3389,15 @@
       const d = parseData(dataStr);
       if(f.from){ const from = new Date(f.from+'T00:00'); if(d < from) return false; }
       if(f.to){ const to = new Date(f.to+'T00:00'); if(d > to) return false; }
-    } else if(f.period === 30 || f.period === 60 || f.period === 90){
-      const d = parseData(dataStr);
-      const limite = new Date(HOJE); limite.setDate(limite.getDate() - f.period);
-      if(d < limite || d > HOJE) return false;
+    } else {
+      /* QA BUG-05: o data-period chega como texto ('30'/'60'/'90') e a comparação era
+         com número (=== 30), então nenhum período filtrava nada. Number() resolve. */
+      const dias = Number(f.period);
+      if(dias === 30 || dias === 60 || dias === 90){
+        const d = parseData(dataStr);
+        const limite = new Date(HOJE); limite.setDate(limite.getDate() - dias);
+        if(d < limite || d > HOJE) return false;
+      }
     }
     return true;
   }
@@ -2674,20 +3463,30 @@
   document.getElementById('pCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalPag')));
   document.getElementById('modalPag').addEventListener('click', e=>{ if(e.target===document.getElementById('modalPag')) fecharModal(document.getElementById('modalPag')); });
   document.getElementById('pAdd').addEventListener('click', ()=>{
-    const mes = document.getElementById('pMes').value.trim() || 'Out/2026';
-    const pago = parseValor(document.getElementById('pValor').value);
+    /* QA BUG-07: aceitava mês vazio (caía num 'Out/2026' inventado), lixo e valor
+       negativo — o histórico do Time registrava pagamento que não existiu. */
+    if(!pagAtual){ toast('Abra a ficha do funcionário na lista do Time antes de registrar o pagamento'); return; }
+    const mes = document.getElementById('pMes').value.trim();
+    const bruto = document.getElementById('pValor').value.trim();
+    const pago = parseValor(bruto);
+    if(!mes){ toast('Informe o mês do pagamento (ex.: Out/2026)'); document.getElementById('pMes').focus(); return; }
+    if(!bruto || !(pago > 0)){ toast('Informe um valor de pagamento maior que zero (ex.: 2.500,00)'); document.getElementById('pValor').focus(); return; }
     pagAtual.pagamentos.push({mes, pago, quando: agora()});
     renderPag();
     document.getElementById('pMes').value = '';
     document.getElementById('pValor').value = '';
-    toast('Pagamento registrado: ' + mes);
+    toast('Pagamento registrado: ' + mes + ' — R$ ' + pago.toLocaleString('pt-BR'));
   });
 
   document.getElementById('pSave').addEventListener('click', ()=>{
+    if(!pagAtual){ toast('Abra a ficha do funcionário na lista do Time antes de quitar'); return; }
     const quando = agora();
     let adicionou = false;
+    let invalidos = 0;
     document.querySelectorAll('.quitar-input').forEach(inp=>{
-      const v = parseValor(inp.value);
+      const bruto = String(inp.value || '').trim();
+      const v = parseValor(bruto);
+      if(bruto && !(v > 0)){ invalidos++; return; }     // QA BUG-07: lixo/negativo não vira quitação
       if(v > 0){
         pagAtual.quitacoes = pagAtual.quitacoes || [];
         pagAtual.quitacoes.push({mes: inp.dataset.mes, valor: v, quando});
@@ -2695,7 +3494,9 @@
       }
     });
     renderPag();
-    toast(adicionou ? 'Quitação salva — pendente abatido' : 'Nenhum valor informado');
+    if(adicionou) toast('Quitação salva — pendente abatido');
+    else if(invalidos) toast('Valor inválido: a quitação precisa ser um número maior que zero (ex.: 500,00)');
+    else toast('Nenhum valor informado');
   });
 
   // ===== Filtros e relatórios (ponto + pagamentos) =====
@@ -2841,75 +3642,122 @@
       document.getElementById('pacComoConheceu').value === 'indicacao' ? 'block' : 'none';
   });
 
-  // ===== Radiografias por paciente =====
-  const radiografias = {
-    'Ana Souza': [
-      {tipo:'Panorâmica', data:'02/09/2026'},
-      {tipo:'Periapical 26', data:'15/09/2026'}
-    ],
-    'João Pereira': [
-      {tipo:'Periapical 26', data:'15/09/2026'}
-    ],
-    'Maria Lima': [
-      {tipo:'Panorâmica', data:'18/08/2026'}
-    ],
-    'Carlos Oliveira': [
-      {tipo:'Tomografia', data:'15/09/2026'}
-    ]
-  };
+  // ===== Exames da ficha: o que está no banco + upload de verdade (QA BUG-27) =====
+  /* A aba listava radiografias de exemplo e o "Enviar imagem" só dava um toast dizendo que
+     no sistema real haveria upload. Agora o arquivo escolhido sobe para
+     POST /api/pacientes/<id>/exames, é gravado na pasta exames/ do servidor e a lista sai
+     de GET /api/pacientes/<id>/exames (nada de exemplo na tela). */
+  const examesPorPaciente = {};                 // {nome: [linhas de GET .../exames]}
+
+  function nomeArquivoSeguro(nome){
+    const limpo = String(nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^[^A-Za-z0-9]+/,'').replace(/-+/g,'-');
+    const partes = limpo.split('.');
+    const ext = partes.length > 1 ? '.' + partes.pop().replace(/[^A-Za-z0-9]/g,'').slice(0,8) : '';
+    const base = (partes.join('.') || 'exame').slice(0,60);
+    return (base + ext).slice(0,100);
+  }
+  function dataUrlBase64(dataUrl){
+    const texto = String(dataUrl || '');
+    const corte = texto.indexOf(',');
+    if(corte < 0 || texto.slice(0, corte).indexOf('base64') < 0) return '';
+    return texto.slice(corte + 1);
+  }
+  function lerArquivoBase64(arquivo){
+    return new Promise((ok, falha)=>{
+      const leitor = new FileReader();
+      leitor.onload = ()=>ok(dataUrlBase64(leitor.result));
+      leitor.onerror = ()=>falha(new Error('não deu para ler o arquivo escolhido'));
+      leitor.readAsDataURL(arquivo);
+    });
+  }
+
+  async function carregarExames(id, nome, redesenhar){
+    const lista = await api('/api/pacientes/' + id + '/exames').catch(()=>null);
+    if(!lista) return null;
+    examesPorPaciente[nome] = lista;
+    if(redesenhar !== false && pacienteAtual === nome) renderRadioGrid(nome);
+    return lista;
+  }
 
   function renderRadioGrid(nome){
     const el = document.getElementById('radioGrid');
     const titulo = document.getElementById('radioTitulo');
-    const lista = radiografias[nome];
-    if(!lista){
-      titulo.textContent = 'Exames';
-      el.innerHTML = '<div class="hint sem-margem">Nenhuma imagem registrada para este paciente.</div>';
+    if(!el) return;
+    const lista = (nome && examesPorPaciente[nome]) || [];
+    titulo.textContent = nome ? 'Exames de ' + nome : 'Exames';
+    if(!lista.length){
+      el.innerHTML = '<div class="hint sem-margem">Nenhum exame anexado a esta ficha ainda — use “Enviar imagem”.</div>';
       return;
     }
-    titulo.textContent = 'Exames de ' + nome;
     el.innerHTML = '<div class="grid g3">' + lista.map(r=>
-      `<div class="radio"><div class="thumb"><svg class="ic" aria-hidden="true"><use href="#i-exame"/></svg></div><div class="cap"><b>${r.tipo}</b><span>${r.data}</span></div></div>`
+      '<div class="radio"><div class="thumb"><svg class="ic" aria-hidden="true"><use href="#i-exame"/></svg></div>'
+      + '<div class="cap"><b>' + esc(r.tipo || 'outro') + '</b><span>' + esc(quandoBR(r.data)) + '</span>'
+      + '<span class="muted">' + esc(String(r.arquivo || '').split('/').pop() || '—') + '</span></div></div>'
     ).join('') + '</div>';
   }
 
-  renderRadioGrid('Ana Souza');
+  renderRadioGrid(null);
+
+  document.getElementById('btnEnviarImagem').addEventListener('click', ()=>{
+    const id = modoEdicaoDosExames();
+    if(!id) return;
+    const entrada = document.getElementById('exameArquivo');
+    entrada.value = '';                          // deixa escolher o mesmo arquivo de novo
+    entrada.click();
+  });
+  function modoEdicaoDosExames(){
+    if(!pacienteAtual){ toast('Abra a ficha de um paciente antes de enviar o exame'); return null; }
+    const id = idDoPaciente(pacienteAtual);
+    if(!id){ toast('A ficha de ' + pacienteAtual + ' ainda não está no banco — o exame não foi enviado'); return null; }
+    return id;
+  }
+  document.getElementById('exameArquivo').addEventListener('change', async (e)=>{
+    const arquivo = e.target.files && e.target.files[0];
+    if(!arquivo) return;
+    const id = modoEdicaoDosExames();
+    if(!id) return;
+    const nome = pacienteAtual;
+    try{
+      const conteudo = await lerArquivoBase64(arquivo);
+      if(!conteudo) throw new Error('o arquivo chegou vazio — nada foi enviado');
+      await api('/api/pacientes/' + id + '/exames', {metodo:'POST', corpo:{
+        nome:nomeArquivoSeguro(arquivo.name), conteudo:conteudo,
+        tipo:document.getElementById('exameTipo').value, descricao:''
+      }});
+      await carregarExames(id, nome);
+      toast('Exame “' + arquivo.name + '” anexado à ficha de ' + nome);
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      e.target.value = '';
+    }
+  });
 
   // ===== Orçamentos por paciente =====
-  const orcamentos = {
-    'Ana Souza': {
-      status:'Aprovado',
-      itens:[
-        {proc:'Limpeza + profilaxia', dente:'—', valor:'R$ 250,00'},
-        {proc:'Restauração resina', dente:'26', valor:'R$ 400,00'},
-        {proc:'Clareamento (2 sessões)', dente:'—', valor:'R$ 600,00'}
-      ],
-      subtotal:'R$ 1.250,00', desconto:'- R$ 50,00', total:'R$ 1.200,00'
-    },
-    'João Pereira': {
-      status:'Em aberto',
-      itens:[{proc:'Restauração resina', dente:'26', valor:'R$ 400,00'}],
-      subtotal:'R$ 400,00', desconto:'—', total:'R$ 400,00'
-    },
-    'Carlos Oliveira': {
-      status:'Aprovado',
-      itens:[{proc:'Implante', dente:'36', valor:'R$ 3.500,00'}],
-      subtotal:'R$ 3.500,00', desconto:'- R$ 300,00', total:'R$ 3.200,00'
-    }
-  };
+  /* Sem dado de exemplo aqui: carregarFinanceiro() enche este mapa com o que veio de
+     GET /api/pacientes/<id>/financeiro (QA BUG-04: antes o orçamento da tela Dinheiro
+     era fixo e contradizia a ficha). */
+  const orcamentos = {};
 
   function renderOrcPacientes(filtro){
     const el = document.getElementById('orcPacientes');
     el.innerHTML = '';
     const q = (filtro || '').toLowerCase().trim();
-    Object.keys(orcamentos).forEach(nome=>{
+    // lista vem do banco (GET /api/pacientes); o detalhe aparece quando a ficha é aberta
+    const nomes = pacientesLista.length ? pacientesLista.map(r=>r.nome) : [];
+    el.innerHTML = nomes.length ? '' : '<div class="hint sem-margem">Nenhuma ficha carregada ainda.</div>';
+    nomes.forEach(nome=>{
       if(q && !nome.toLowerCase().includes(q)) return;
+      const p = patients[nome] || {};
       const o = orcamentos[nome];
+      const status = o && o.real ? o.status
+        : (!p.orcamento && !pendenteDe(p) ? 'Sem orçamento' : pendenteDe(p) > 0 ? 'Em aberto' : 'Quitado');
       const div = document.createElement('div');
       div.className = 'hist-item';
       div.style.cursor = 'pointer';
       div.dataset.pac = nome;
-      div.innerHTML = '<span class="tipo">' + nome + '</span><span class="pill ' + (o.status === 'Aprovado' ? '' : 'wait') + '">' + o.status + '</span><span class="val">' + resumoSaldo(nome) + '</span>';
+      div.innerHTML = '<span class="tipo">' + esc(nome) + '</span><span class="pill ' + (status === 'Quitado' ? '' : 'wait') + '">' + esc(status) + '</span><span class="val">' + esc(resumoSaldo(nome)) + '</span>';
       el.appendChild(div);
     });
   }
@@ -2918,7 +3766,7 @@
     const el = document.getElementById('orcDetalhe');
     const titulo = document.getElementById('orcTitulo');
     const o = orcamentos[nome];
-    if(!o){
+    if(!o || !o.real){
       titulo.textContent = 'Orçamento — selecione um paciente';
       el.innerHTML = '<div class="hint">Clique em um paciente para ver o orçamento.</div>';
       return;
@@ -2945,61 +3793,87 @@
   });
 
   renderOrcPacientes();
-  renderOrcDetalhe('Ana Souza');
+  renderOrcDetalhe(null);
 
   renderFeedbacks();
 
-  // ===== Login / Logout (ponto de entrada e saída) =====
-  funcionarios.forEach(f=>{ f.senha = '1234'; });
-  let usuarioLogado = null;
-
+  // ===== Login / Logout contra o backend (token no sessionStorage) =====
   function horaAgora(){
     const d = new Date();
     const pad = n => String(n).padStart(2,'0');
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
+  /* QA BUG-21: a saudação do login era "Bom dia" fixa — às 17h50 o toast dava bom dia.
+     Agora quem manda é a hora do relógio (e a função aceita a hora no teste). */
+  function saudacaoDoDia(hora){
+    const h = (hora === undefined || hora === null) ? new Date().getHours() : Number(hora);
+    if(!isFinite(h) || h < 0 || h > 23) return 'Olá';
+    if(h < 12) return 'Bom dia';
+    if(h < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
   function dataHoje(){ return dma(0); }
 
   function preencherLogin(){
-    const sel = document.getElementById('loginUser');
-    sel.innerHTML = '';
-    funcionarios.forEach(f=>{
-      const o = document.createElement('option');
-      o.value = f.nome;
-      o.textContent = f.nome + ' — ' + f.cargo;
-      sel.appendChild(o);
-    });
+    const campo = document.getElementById('loginUser');
+    if(!campo) return;
+    try{ const ultimo = localStorage.getItem('cd-ultimo-usuario'); if(ultimo) campo.value = ultimo; }catch(_){ }
+    setTimeout(()=>{ try{ (campo.value ? document.getElementById('loginSenha') : campo).focus(); }catch(_){ } }, 40);
   }
 
-  function fazerLogin(){
-    const nome = document.getElementById('loginUser').value;
-    const senha = document.getElementById('loginSenha').value;
-    const f = funcionarios.find(x=>x.nome===nome);
-    if(!f){ toast('Usuário não encontrado'); return; }
-    if(senha !== f.senha){ toast('Senha incorreta'); return; }
-    usuarioLogado = f;
-    f.ponto = f.ponto || [];
-    f.ponto.unshift({data: dataHoje(), entrada: horaAgora(), saida:'—', status:'presente'});
-    document.getElementById('loginOverlay').classList.remove('open');
-    document.getElementById('loginSenha').value = '';
-    document.getElementById('topAvatar').textContent = f.nome.charAt(0);
-    toast('Bom dia, ' + f.nome + '! Ponto de entrada: ' + horaAgora());
-    renderPontoHoje();
+  async function fazerLogin(){
+    const login = (document.getElementById('loginUser').value || '').trim();
+    const senha = document.getElementById('loginSenha').value || '';
+    if(!login){ toast('Informe o usuário'); document.getElementById('loginUser').focus(); return; }
+    if(!senha){ toast('Informe a senha'); document.getElementById('loginSenha').focus(); return; }
+    if(!licencaAtiva){ toast(MENSAGEM_LICENCA); mostrarAvisoLicenca(); return; }
+    const botao = document.getElementById('btnLogin');
+    botao.disabled = true;
+    try{
+      const sessao = await api('/api/login', {metodo:'POST', semToken:true, corpo:{login:login, senha:senha}});
+      guardarToken(sessao.token);
+      guardarUsuario(sessao.usuario || login);
+      usuarioLogado = {nome: sessao.usuario || login, papel: sessao.papel || 'recepcao'};
+      guardarPapel(usuarioLogado.papel);        // QA BUG-14: o papel volta no reload da aba
+      aplicarPapeisNaTela();
+      try{ localStorage.setItem('cd-ultimo-usuario', login); }catch(_){ }
+      document.getElementById('loginSenha').value = '';
+      const aviso = document.getElementById('loginAviso');
+      if(aviso){ aviso.hidden = true; aviso.textContent = ''; }
+      document.getElementById('topAvatar').textContent = usuarioLogado.nome.charAt(0).toUpperCase();
+      await carregarPacientes();
+      const primeiro = patients[pacienteAtual] ? pacienteAtual : (pacientesLista[0] && pacientesLista[0].nome);
+      if(primeiro) await openPatient(primeiro, 'resumo');
+      document.getElementById('loginOverlay').classList.remove('open');
+      toast(saudacaoDoDia() + ', ' + usuarioLogado.nome + '! Ponto de entrada: ' + horaAgora());
+      renderPontoHoje();
+      if(podeSetor('dinheiro')){ await carregarLancamentos(); }   // Dinheiro: extrato do banco
+      if(podeSetor('dinheiro')){ await carregarCaixa(); }         // caixa por moeda
+      if(podeSetor('atendimento')) carregarPainelRobo();          // painel do robô com dados do banco
+    }catch(erro){
+      toast(erro && erro.rede ? 'Sem conexão com o servidor local — não deu para entrar'
+                              : ((erro && erro.message) || 'Não deu para entrar'));
+    }finally{
+      botao.disabled = false;
+    }
   }
 
   document.getElementById('btnLogin').addEventListener('click', fazerLogin);
   document.getElementById('loginSenha').addEventListener('keydown', e=>{
     if(e.key === 'Enter') fazerLogin();
   });
+  document.getElementById('loginUser').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') document.getElementById('loginSenha').focus();
+  });
 
-  document.getElementById('btnLogout').addEventListener('click', ()=>{
-    if(!usuarioLogado) return;
-    const ultimo = (usuarioLogado.ponto||[]).find(p=>p.saida==='—');
-    if(ultimo) ultimo.saida = horaAgora();
-    toast('Ponto de saída: ' + horaAgora() + '. Até logo, ' + usuarioLogado.nome + '!');
+  document.getElementById('btnLogout').addEventListener('click', async ()=>{
+    if(token()){
+      try{ await api('/api/logout', {metodo:'POST', corpo:{}}); }
+      catch(erro){ /* servidor fora do ar: o logout local vale do mesmo jeito */ }
+    }
+    voltarParaLogin();
+    toast('Ponto de saída: ' + horaAgora() + '. Até logo!');
     renderPontoHoje();
-    usuarioLogado = null;
-    document.getElementById('loginOverlay').classList.add('open');
   });
 
   // ===== Novas consultas (revisão do robô) =====
@@ -3067,7 +3941,9 @@
       renderAgenda();
       renderProximas();
     } else if(btn.dataset.acao === 'reagendar'){
-      abrirNovaConsulta({paciente:c.nome, hora:c.hora, dia:c.dia});
+      /* QA BUG-12: o 'Corrigir' abre o formulário em modo remarcação apontando para o
+         item da fila (fila:i) — sem isso o salvar criava uma consulta nova. */
+      abrirNovaConsulta({paciente:c.nome, hora:c.hora, dia:c.dia, remarcar:c, fila:i});
       return;
     } else {
       toast('Consulta de ' + c.nome + ' cancelada');
@@ -3251,13 +4127,39 @@
     });
   }
 
+  /* A conversa que o painel mostra é a do banco (GET /api/conversas). QA BUG-13: o painel
+     dizia "mensagem enviada" e continuava exibindo as 4 mensagens de exemplo — a mensagem
+     que a secretária mandou não aparecia na conversa. */
+  function conversaDoPacienteNoBanco(nome){
+    const id = idDoPaciente(nome);
+    if(!id) return [];
+    return emOrdemDeConversa(conversasApi.filter(c => c.paciente_id === id))
+      .map(c => ({dir: c.direcao === 'recebida' ? 'in' : 'out', t: c.texto, h: quandoConversa(c.data)}));
+  }
+
+  function bolhasPainel(msgs){
+    return msgs.map(m=>`<div class="wa-msg ${m.dir}">${esc(m.t)}<span class="t">${esc(m.h)}</span></div>`).join('');
+  }
+
   function renderWaBody(){
     const el = document.getElementById('waBody');
-    const chat = waChats[waAtual];
+    const real = conversaDoPacienteNoBanco(waAtual);
+    const chat = waChats[waAtual] || {msgs:[], idioma:'PT'};
     document.getElementById('waHeadName').textContent = waAtual;
     document.getElementById('waHeadAv').textContent = waAtual.charAt(0);
-    document.getElementById('waHeadStatus').textContent = 'online · ' + (chat.idioma === 'ES' ? 'espanhol' : 'português');
-    el.innerHTML = chat.msgs.map(m=>`<div class="wa-msg ${m.dir}">${m.t}<span class="t">${m.h}</span></div>`).join('');
+    if(real.length){
+      document.getElementById('waHeadStatus').textContent = 'conversa da clínica · ' + real.length + ' mensagem(ns) no banco';
+      el.innerHTML = bolhasPainel(real);
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+    /* sem mensagem no banco o chat de exemplo só aparece rotulado como exemplo */
+    document.getElementById('waHeadStatus').textContent = chat.msgs.length
+      ? 'exemplo de demonstração · ' + (chat.idioma === 'ES' ? 'espanhol' : 'português')
+      : 'sem conversa registrada';
+    el.innerHTML = chat.msgs.length
+      ? bolhasPainel(chat.msgs) + '<div class="wa-vazia">Exemplo de demonstração — este contato ainda não tem mensagem no banco.</div>'
+      : '<div class="wa-vazia"><b>Nenhuma conversa registrada com ' + esc(waAtual) + '.</b> <br>O robô ainda não trocou mensagem com este paciente — não há histórico para ler aqui.</div>';
     el.scrollTop = el.scrollHeight;
   }
 
@@ -3273,13 +4175,15 @@
   /* Atalho "Ver conversa" da fila do robô: abre o WhatsApp já na conversa do paciente */
   function abrirConversa(nome){
     go('whatsapp');
-    if(waChats[nome]){
+    const noBanco = conversaDoPacienteNoBanco(nome);
+    if(noBanco.length || waChats[nome]){
       waAtual = nome;
       waUnread[nome] = 0;
       renderWaList();
       renderWaBody();
       atualizarWaBadge();
-      toast('Conversa de ' + nome + ' aberta — ' + waChats[nome].msgs.length + ' mensagem(ns) registradas');
+      toast('Conversa de ' + nome + ' aberta — ' + (noBanco.length || waChats[nome].msgs.length)
+        + ' mensagem(ns) ' + (noBanco.length ? 'no banco' : 'de exemplo'));
     } else {
       renderWaSemConversa(nome);
       toast('Nenhuma conversa registrada com ' + nome);
@@ -3314,12 +4218,36 @@
     const input = document.getElementById('waInput');
     const txt = input.value.trim();
     if(!txt) return;
+    const id = idDoPaciente(waAtual);
+    if(id){
+      // paciente existe no banco: a mensagem vira conversa 'enviada' na ficha dele
+      enviarPeloPainel(id, txt, input);
+      return;
+    }
     if(!waChats[waAtual]){ toast('Nenhuma conversa registrada com ' + waAtual + ' — nada foi enviado'); return; }
     waChats[waAtual].msgs.push({dir:'out', t:txt, h:waAgora()});
     input.value = '';
     renderWaBody();
     renderWaList(document.getElementById('waSearch').value);
   });
+
+  async function enviarPeloPainel(id, texto, input){
+    const botao = document.getElementById('waSend');
+    botao.disabled = true;
+    try{
+      const r = await api('/api/conversas', {metodo:'POST', corpo:{paciente_id:id, texto:texto}});
+      if(input) input.value = '';
+      await carregarPainelRobo();
+      renderWaBody();          // QA BUG-13: a mensagem enviada aparece na conversa do painel
+      renderWaList(document.getElementById('waSearch').value);
+      if(r && r.enviado) toast('Mensagem enviada pelo WhatsApp para ' + waAtual + '.');
+      else toast('Mensagem guardada na ficha de ' + waAtual + ' — não saiu pelo WhatsApp (' + ((r && r.motivo) || 'sem envio') + ').');
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
+  }
   document.getElementById('waInput').addEventListener('keydown', e=>{
     if(e.key==='Enter') document.getElementById('waSend').click();
   });
@@ -3376,19 +4304,171 @@
     b.setAttribute('aria-expanded', abrir ? 'true' : 'false');
     b.textContent = abrir ? 'Esconder ajustes avançados' : 'Mostrar ajustes avançados (26 interruptores)';
   });
-  document.getElementById('btnBotConfig').addEventListener('click', ()=>{
+  document.getElementById('btnBotConfig').addEventListener('click', async ()=>{
     document.getElementById('botAvancado').hidden = true;
     document.getElementById('btnAvancado').setAttribute('aria-expanded','false');
     document.getElementById('btnAvancado').textContent = 'Mostrar ajustes avançados (26 interruptores)';
-    aplicarPerfil('padrao');
+    /* QA BUG-08: antes a tela forçava o perfil 'padrao' e nunca relia o que estava
+       gravado — reabrir mostrava Padrão/25 ligadas mesmo depois de salvar Agressivo. */
+    await carregarConfigBot();                  // GET /api/bot/config: perfil + as 26 automações
     abrirModal(document.getElementById('modalBotConfig'));
   });
   document.getElementById('btnBotCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalBotConfig')));
-  document.getElementById('btnBotSave').addEventListener('click', ()=>{
+  document.getElementById('btnBotSave').addEventListener('click', async ()=>{
     const perfil = [...document.querySelectorAll('input[name=botPerfil]')].find(r=>r.checked);
     const ligados = switchesBot().filter(s=>s.checked).length;
-    fecharModal(document.getElementById('modalBotConfig'));
-    toast('Configurações do robô salvas — ' + (perfil ? 'perfil ' + rotuloPerfil[perfil.value] : 'perfil personalizado') + ', ' + ligados + ' automações ligadas');
+    const botao = document.getElementById('btnBotSave');
+    const boas = document.getElementById('cfgBoasVindas');
+    const inicio = (document.getElementById('cfgInicio') || {}).value || '';
+    const fim = (document.getElementById('cfgFim') || {}).value || '';
+    /* QA BUG-09: texto acima do limite era cortado calado no servidor; avisa aqui antes. */
+    if(boas && boas.value.length > 500){
+      toast('A mensagem de boas-vindas tem ' + boas.value.length + ' caracteres e o limite é 500 — encurte e salve de novo');
+      boas.focus();
+      return;
+    }
+    /* QA BUG-10: 18:00→08:00 era aceito e o robô parava de oferecer horário. */
+    if(inicio && fim && inicio >= fim){
+      toast('Horário comercial invertido: abre ' + inicio + ' e fecha ' + fim + ' — o fim precisa ser depois do início');
+      document.getElementById('cfgFim').focus();
+      return;
+    }
+    const corpo = {
+      modo: (document.getElementById('cfgModo') || {}).value || 'auto',
+      boas_vindas: (boas || {}).value || '',
+      horario: {
+        inicio,
+        fim,
+        dias: (configBot && configBot.horario && configBot.horario.dias) || [0, 1, 2, 3, 4]
+      },
+      /* QA BUG-08: perfil e as 26 automações vão junto — o bot_config.json é a memória. */
+      perfil: perfil ? perfil.value : 'personalizado',
+      automacoes: switchesBot().reduce((mapa, s)=>{ mapa[s.dataset.cfg] = !!s.checked; return mapa; }, {})
+    };
+    botao.disabled = true;
+    try{
+      const r = await api('/api/bot/config', {metodo:'PUT', corpo:corpo});
+      configBot = (r && r.config) || configBot;
+      fecharModal(document.getElementById('modalBotConfig'));
+      toast('Configurações salvas — robô em modo ' + (corpo.modo === 'desligado' ? 'desligado' : 'automático')
+        + ', atendimento das ' + corpo.horario.inicio + ' às ' + corpo.horario.fim
+        + (perfil ? ' (' + rotuloPerfil[perfil.value] + ', ' + ligados + ' automações ligadas)' : '')
+        + (corpo.boas_vindas ? '' : ' — sem mensagem de boas-vindas, o robô só responde'));
+    }catch(erro){
+      avisar(erro);                            // 503 de licença e 400 de campo torto caem aqui
+    }finally{
+      botao.disabled = false;
+    }
+  });
+
+  /* ===== Painel de conversas do robô: fila de humano + últimas conversas ===== */
+  let configBot = null;
+
+  async function carregarConfigBot(){
+    try{
+      configBot = await api('/api/bot/config');
+    }catch(erro){
+      avisar(erro);
+      return null;
+    }
+    if(!configBot) return null;
+    const modo = document.getElementById('cfgModo');
+    if(modo) modo.value = configBot.modo === 'desligado' ? 'desligado' : 'auto';
+    const boas = document.getElementById('cfgBoasVindas');
+    if(boas) boas.value = configBot.boas_vindas || '';
+    const horario = configBot.horario || {};
+    const inicio = document.getElementById('cfgInicio');
+    const fim = document.getElementById('cfgFim');
+    if(inicio && horario.inicio) inicio.value = horario.inicio;
+    if(fim && horario.fim) fim.value = horario.fim;
+    /* QA BUG-08: o perfil e os 26 interruptores voltam do arquivo — abrir de novo mostra
+       o que foi salvo (Agressivo continua Agressivo), não o padrão da tela. */
+    if(configBot.automacoes){
+      switchesBot().forEach(s=>{
+        if(configBot.automacoes[s.dataset.cfg] !== undefined) s.checked = !!configBot.automacoes[s.dataset.cfg];
+      });
+    }
+    marcarPerfil((configBot.perfil && perfisBot[configBot.perfil]) ? configBot.perfil : null);
+    return configBot;
+  }
+
+  function renderHumano(){
+    const el = document.getElementById('humanoList');
+    const contador = document.getElementById('humanoCount');
+    if(!el) return;
+    const porPaciente = {};
+    conversasApi.forEach(c=>{
+      (porPaciente[c.paciente_id] = porPaciente[c.paciente_id] || []).push(c);
+    });
+    const fila = Object.keys(porPaciente)
+      .map(id=>({id:+id, msgs:emOrdemDeConversa(porPaciente[id])}))
+      .filter(g=>g.msgs.some(c=>c.aguardando_humano))
+      .sort((a, b)=> b.msgs[b.msgs.length-1].id - a.msgs[a.msgs.length-1].id);
+    if(contador) contador.textContent = fila.length;
+    if(!fila.length){
+      el.innerHTML = '<div class="hint sem-margem">Ninguém esperando — o robô está dando conta sozinho.</div>';
+      return;
+    }
+    el.innerHTML = fila.map(g=>{
+      const ultima = g.msgs[g.msgs.length-1];
+      const nome = ultima.paciente || nomeDoPacienteId(g.id) || ('Paciente ' + g.id);
+      return '<div class="config-row"><div><div class="lbl">' + esc(nome) + '</div>'
+        + '<div class="desc">' + esc(quandoConversa(ultima.data)) + ' · ' + esc(String(ultima.texto || '').slice(0, 70)) + '</div></div>'
+        + '<div class="ctl" style="display:flex;gap:6px"><button class="btn small ghost" type="button" data-ficha="' + esc(nome) + '">Abrir ficha</button>'
+        + '<button class="btn small" type="button" data-assumir="' + g.id + '">Assumir</button></div></div>';
+    }).join('');
+  }
+
+  function renderUltimasConversas(){
+    const el = document.getElementById('ultimasConversas');
+    if(!el) return;
+    const ultimas = conversasApi.slice(0, 12);
+    if(!ultimas.length){
+      el.innerHTML = '<div class="hint sem-margem">Nenhuma conversa registrada ainda.</div>';
+      return;
+    }
+    el.innerHTML = ultimas.map(c=>{
+      const nome = c.paciente || nomeDoPacienteId(c.paciente_id) || ('Paciente ' + c.paciente_id);
+      const recebida = c.direcao === 'recebida';
+      return '<div class="wa-chat-item" data-ficha="' + esc(nome) + '">'
+        + '<div class="wa-av">' + esc(String(nome).charAt(0).toUpperCase()) + '</div>'
+        + '<div><div class="wa-name">' + esc(nome)
+        + (c.aguardando_humano ? ' <span class="chip aguardando">humano</span>' : '') + '</div>'
+        + '<div class="wa-prev">' + (recebida ? 'recebido: ' : 'enviado: ') + esc(String(c.texto || '').slice(0, 50)) + '</div></div>'
+        + '<div class="wa-time">' + esc(quandoConversa(c.data)) + '</div></div>';
+    }).join('');
+  }
+
+  async function carregarPainelRobo(){
+    try{
+      conversasApi = (await api('/api/conversas')) || [];
+    }catch(erro){
+      avisar(erro);                            // 401 reabre o login; 503 avisa a licença
+      return;
+    }
+    renderHumano();
+    renderUltimasConversas();
+    renderWaBody();              // a conversa aberta passa a ser lida do banco (QA BUG-13)
+  }
+
+  document.getElementById('humanoList').addEventListener('click', async e=>{
+    const ficha = e.target.closest('[data-ficha]');
+    if(ficha){ openPatient(ficha.dataset.ficha, 'conversas'); return; }
+    const assumir = e.target.closest('[data-assumir]');
+    if(!assumir) return;
+    assumir.disabled = true;
+    try{
+      await api('/api/conversas/LIBERAR', {metodo:'POST', corpo:{paciente_id:+assumir.dataset.assumir}});
+      await carregarPainelRobo();
+      toast('Conversa assumida — o robô voltou a responder esse contato.');
+    }catch(erro){
+      assumir.disabled = false;
+      avisar(erro);
+    }
+  });
+  document.getElementById('ultimasConversas').addEventListener('click', e=>{
+    const item = e.target.closest('[data-ficha]');
+    if(item) openPatient(item.dataset.ficha, 'conversas');
   });
 
   renderWaList();
@@ -3398,15 +4478,10 @@
   // ===== Receber: um só fluxo, três caixas, cotação do dia =====
   const cotacao = {usdBRL:5.55, brlGS:1320};
   let recebendoDe = 'Ana Souza';
-  const lancamentos = [
-    {dia:0, hora:'08:30', nome:'Ana Souza', desc:'Limpeza', forma:'Pix', valor:250, moeda:'BRL'},
-    {dia:0, hora:'09:40', nome:'João Pereira', desc:'Restauração', forma:'Cartão', valor:250, moeda:'BRL'},
-    {dia:0, hora:'11:00', nome:'Maria Lima', desc:'Retorno', forma:'Transferência', valor:150, moeda:'USD'},
-    {dia:0, hora:'12:15', nome:'Carlos Oliveira', desc:'Avaliação', forma:'Transferência', valor:450000, moeda:'GS'},
-    {dia:0, hora:'16:00', nome:'Fernanda Costa', desc:'Clareamento', forma:'Cheque', valor:800, moeda:'BRL'},
-    {dia:-1, hora:'10:20', nome:'Roberto Almeida', desc:'Avaliação inicial', forma:'Pix', valor:500, moeda:'BRL'},
-    {dia:-2, hora:'15:10', nome:'Ana Souza', desc:'Restauração', forma:'Transferência', valor:200000, moeda:'GS'}
-  ];
+  /* Recebimentos da tela Dinheiro: vêm do banco (GET /api/pagamentos) — a lista fixa
+     que existia aqui mostrava dinheiro que não estava no caixa (QA BUG-04). */
+  let lancamentos = [];        // [{id, nome, data, valor, moeda, forma, ...}]
+  let caixaMoedas = {};        // GET /api/caixa: {BRL:{total,hoje}, USD:.., GS:..}
 
   function atualizarCotacao(){
     const u = parseNum(document.getElementById('cotUSD').value);
@@ -3426,6 +4501,27 @@
     document.getElementById('recConvUSD').textContent = !u ? '—' : '≈ ' + fmtMoeda(u * cotacao.usdBRL, 'BRL') + ' · ≈ ' + fmtMoeda(u * cotacao.usdBRL * cotacao.brlGS, 'GS');
     document.getElementById('recConvGS').textContent = !g ? '—' : '≈ ' + fmtMoeda(g / cotacao.brlGS, 'BRL') + ' · ≈ ' + fmtMoeda(g / cotacao.brlGS / cotacao.usdBRL, 'USD');
   }
+  /* QA BUG-23: o recado do Receber era sempre "Informe em qual caixa o dinheiro entrou",
+     mesmo quando o valor tinha sido digitado — vazio, zero, negativo ou "abc". O campo
+     vazio é do outro recado; o que está digitado e não serve vira frase própria, apontando
+     a caixa e o que há de errado. Devolve null quando o valor serve. */
+  const CAIXAS_RECEBER = [
+    {moeda:'BRL', campo:'recValorBRL', caixa:'Caixa Real'},
+    {moeda:'USD', campo:'recValorUSD', caixa:'Caixa Dólar'},
+    {moeda:'GS', campo:'recValorGS', caixa:'Caixa Guaraní'}
+  ];
+  function problemaDoValorRecebido(bruto, rotulo){
+    const texto = String(bruto === undefined || bruto === null ? '' : bruto).trim();
+    if(!texto) return null;                       // caixa vazia: quem decide são as outras
+    const limpo = texto.replace(/[^\d.,-]/g,'');
+    if(!/\d/.test(limpo))
+      return 'O valor digitado em ' + rotulo + ' não é número: "' + texto + '" — corrija antes de confirmar.';
+    if(limpo.indexOf('-') === 0)
+      return 'O valor em ' + rotulo + ' está negativo (' + texto + ') — o recebimento precisa ser maior que zero.';
+    if(!(parseNum(texto) > 0))
+      return 'O valor em ' + rotulo + ' é zero — o recebimento precisa de um valor maior que zero.';
+    return null;
+  }
   ['cotUSD','cotGS'].forEach(id=>document.getElementById(id).addEventListener('input', atualizarCotacao));
   ['recValorBRL','recValorUSD','recValorGS'].forEach(id=>document.getElementById(id).addEventListener('input', atualizarConversoes));
 
@@ -3440,6 +4536,8 @@
     document.getElementById('recPendente').textContent = fmtMoeda(pend, p.moeda);
     ['recValorBRL','recValorUSD','recValorGS'].forEach(id=>document.getElementById(id).value = '');
     document.getElementById('recObs').value = '';
+    document.getElementById('recForma').value = 'pix';            // BUG-30: caixa começa no Pix
+    CAIXAS_RECEBER.forEach(c=>document.getElementById(c.campo).removeAttribute('aria-invalid'));
     const campo = p.moeda === 'USD' ? 'recValorUSD' : p.moeda === 'GS' ? 'recValorGS' : 'recValorBRL';
     document.getElementById(campo).value = pend ? pend.toLocaleString('pt-BR',{minimumFractionDigits:p.moeda === 'GS' ? 0 : 2, maximumFractionDigits:p.moeda === 'GS' ? 0 : 2}) : '';
     atualizarCotacao();
@@ -3461,45 +4559,121 @@
   });
   document.getElementById('recCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalReceber')));
   document.getElementById('modalReceber').addEventListener('click', e=>{ if(e.target === document.getElementById('modalReceber')) fecharModal(document.getElementById('modalReceber')); });
-  document.getElementById('recOk').addEventListener('click', ()=>{
+  document.getElementById('recOk').addEventListener('click', async ()=>{
     const p = patients[recebendoDe];
-    const caixas = [
-      {moeda:'BRL', campo:'recValorBRL', nome:'Caixa Real'},
-      {moeda:'USD', campo:'recValorUSD', nome:'Caixa Dólar'},
-      {moeda:'GS', campo:'recValorGS', nome:'Caixa Guaraní'}
-    ].map(c=>({moeda:c.moeda, nome:c.nome, valor:parseNum(document.getElementById(c.campo).value)})).filter(c=>c.valor > 0);
-    if(!caixas.length){ toast('Informe em qual caixa o dinheiro entrou'); return; }
+    if(!p){ toast('Nenhuma ficha para ' + recebendoDe); return; }
+    /* QA BUG-23: primeiro diz o que há de errado com o valor (campo digitado que não serve),
+       depois — só se nenhuma caixa tem valor — pede o valor. Nada de culpar "qual caixa"
+       quando o problema é o número. */
+    const lidos = CAIXAS_RECEBER.map(c=>({
+      moeda:c.moeda, nome:c.caixa, campo:c.campo,
+      bruto:document.getElementById(c.campo).value,
+      problema:problemaDoValorRecebido(document.getElementById(c.campo).value, c.caixa)
+    }));
+    const comProblema = lidos.find(c=>c.problema);
+    if(comProblema){
+      const campo = document.getElementById(comProblema.campo);
+      campo.setAttribute('aria-invalid','true');
+      try{ campo.focus(); campo.select(); }catch(_){}
+      toast(comProblema.problema);
+      return;
+    }
+    const caixas = lidos.filter(c=>parseNum(c.bruto) > 0)
+                        .map(c=>({moeda:c.moeda, nome:c.nome, valor:parseNum(c.bruto)}));
+    if(!caixas.length){
+      const campo = document.getElementById('recValorBRL');
+      campo.setAttribute('aria-invalid','true');
+      try{ campo.focus(); }catch(_){}
+      toast('Informe o valor recebido em pelo menos uma caixa (Real, Dólar ou Guaraní) — sem valor não há recebimento.');
+      return;
+    }
+    const forma = document.getElementById('recForma').value || 'pix';
     const obs = document.getElementById('recObs').value.trim();
-    let creditado = 0;
-    caixas.forEach(c=>{
-      creditado += deReais(emReais(c.valor, c.moeda), p.moeda || 'BRL');
-      lancamentos.unshift({dia:0, hora:horaAgora(), nome:recebendoDe, desc:obs || 'Recebimento', forma:c.nome, valor:c.valor, moeda:c.moeda});
-    });
-    p.pago = (p.pago || 0) + creditado;
-    renderLancamentos();
-    renderCaixa();
-    renderSaldos();
-    renderAgenda();
-    renderProximas();
-    if(pacienteAtual === recebendoDe) atualizarSaldoFicha(recebendoDe);
-    fecharModal(document.getElementById('modalReceber'));
-    toast('Recebido de ' + recebendoDe + ': ' + caixas.map(c=>fmtMoeda(c.valor, c.moeda)).join(' + ') + ' — pendência agora ' + fmtMoeda(pendenteDe(p), p.moeda));
+    const botao = document.getElementById('recOk');
+    botao.disabled = true;
+    try{
+      if(p.id){
+        for(const c of caixas){
+          await api('/api/pacientes/' + p.id + '/pagamentos', {metodo:'POST', corpo:{
+            valor:c.valor, moeda:c.moeda,
+            forma:(obs ? forma + ' — ' + obs : forma).slice(0,40)     // BUG-30: lista fechada
+          }});
+        }
+        await carregarFicha(p.id);            // saldo/pendência voltam do banco
+      }else{
+        let creditado = 0;
+        caixas.forEach(c=>{ creditado += deReais(emReais(c.valor, c.moeda), p.moeda || 'BRL'); });
+        p.pago = (p.pago || 0) + creditado;
+      }
+      await carregarLancamentos();          // a lista volta do banco (GET /api/pagamentos)
+      await carregarCaixa();                // caixa por moeda, hoje e total (GET /api/caixa)
+      renderSaldos();
+      renderOrcPacientes();
+      renderAgenda();
+      renderProximas();
+      if(pacienteAtual === recebendoDe){
+        atualizarSaldoFicha(recebendoDe);
+        renderHistoricoFinanceiro(recebendoDe);
+        renderOrcDetalhe(recebendoDe);
+      }
+      fecharModal(document.getElementById('modalReceber'));
+      toast('Recebido de ' + recebendoDe + ': ' + caixas.map(c=>fmtMoeda(c.valor, c.moeda)).join(' + ') + ' — pendência agora ' + fmtMoeda(pendenteDe(p), p.moeda));
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
   });
 
-  // ===== Dinheiro: recebimentos e caixa por moeda =====
+  // ===== Dinheiro: recebimentos e caixa por moeda (dados do backend) =====
+  const rotuloMoeda = {BRL:'Real', USD:'Dólar', GS:'Guaraní'};
+
+  function quandoBR(dataHora){
+    const [dt, t] = String(dataHora || '').split(' ');
+    const [a, m, d] = (dt || '').split('-');
+    if(!a || !m || !d) return '—';
+    return d + '/' + m + ' · ' + (t || '').slice(0,5);
+  }
+
+  async function carregarLancamentos(){
+    try{
+      lancamentos = (await api('/api/pagamentos')) || [];
+    }catch(erro){
+      avisar(erro);
+      return;
+    }
+    renderLancamentos();
+  }
+
+  async function carregarCaixa(){
+    try{
+      const caixa = await api('/api/caixa');
+      caixaMoedas = (caixa && caixa.moedas) || {};
+    }catch(erro){
+      avisar(erro);
+      return;
+    }
+    renderCaixa();
+  }
+
   function renderLancamentos(){
     const q = (document.getElementById('finBusca').value || '').toLowerCase().trim();
-    const lista = lancamentos.filter(l=>!q || (l.nome + ' ' + l.desc + ' ' + l.forma + ' ' + dma(l.dia)).toLowerCase().indexOf(q) >= 0);
+    const lista = lancamentos.filter(l=>!q || (l.nome + ' ' + l.forma + ' ' + l.moeda + ' ' + quandoBR(l.data)).toLowerCase().indexOf(q) >= 0);
     document.getElementById('finTbody').innerHTML = lista.length
-      ? lista.map(l=>'<tr><td>' + dma(l.dia) + ' · ' + l.hora + '</td><td>' + l.nome + '</td><td>' + l.desc + '</td><td>' + l.forma + '</td><td class="mono"><span class="pill">' + fmtMoeda(l.valor, l.moeda) + '</span></td></tr>').join('')
+      ? lista.map(l=>'<tr><td>' + esc(quandoBR(l.data)) + '</td><td>' + esc(l.nome) + '</td><td>' + esc(l.forma || '—') + '</td><td>' + esc(rotuloMoeda[l.moeda] || l.moeda) + '</td><td class="mono"><span class="pill">' + fmtMoeda(l.valor, l.moeda) + '</span></td></tr>').join('')
       : '<tr><td colspan="5" class="muted">Nenhum recebimento no filtro.</td></tr>';
   }
   function renderCaixa(){
     ['BRL','USD','GS'].forEach(m=>{
-      const total = lancamentos.filter(l=>l.moeda === m).reduce((s,l)=>s + l.valor, 0);
-      const hoje = lancamentos.filter(l=>l.moeda === m && l.dia === 0).reduce((s,l)=>s + l.valor, 0);
-      document.getElementById('caixa' + m).textContent = fmtMoeda(total, m);
-      document.getElementById('caixa' + m + 'Hoje').textContent = 'recebido hoje: ' + fmtMoeda(hoje, m);
+      const c = caixaMoedas[m] || {total:0, hoje:0};
+      document.getElementById('caixa' + m).textContent = fmtMoeda(c.total, m);
+      document.getElementById('caixa' + m + 'Hoje').textContent = 'recebido hoje: ' + fmtMoeda(c.hoje, m);
+    });
+
+    ['BRL','USD','GS'].forEach(m=>{
+      const c = caixaMoedas[m] || {pendente:0};
+      const alvo = document.getElementById('pend' + m);
+      if(alvo) alvo.textContent = fmtMoeda(c.pendente || 0, m);
     });
   }
   document.getElementById('finBusca').addEventListener('input', renderLancamentos);
@@ -3520,13 +4694,9 @@
 
   // ===== Botões que antes não faziam nada =====
   document.getElementById('btnEditarPaciente').addEventListener('click', ()=>toast('Editar cadastro de ' + pacienteAtual + ' — o formulário completo abre na ficha'));
-  document.getElementById('btnEnviarImagem').addEventListener('click', ()=>toast('No sistema real a imagem entra por WhatsApp ou upload, direto na ficha de ' + pacienteAtual));
   document.getElementById('btnImprimirOrc').addEventListener('click', ()=>window.print());
   document.getElementById('btnEnviarOrc').addEventListener('click', ()=>toast('Orçamento de ' + pacienteAtual + ' enviado no WhatsApp (' + ((patients[pacienteAtual] || {}).idioma === 'ES' ? 'espanhol' : 'português') + ')'));
-  document.getElementById('btnNovoPaciente').addEventListener('click', ()=>{
-    abrirNovaConsulta();
-    escolherPacienteNC('', true);
-  });
+  document.getElementById('btnNovoPaciente').addEventListener('click', abrirNovoPaciente);
 
   // tabelas longas rolam dentro do cartão: nada de estourar a tela no celular
   function embrulharTabelas(raiz){
@@ -3566,20 +4736,96 @@
   aplicarTema(temaEscuro(), false);
 
   preencherLogin();
+  aplicarPapeisNaTela();       // QA BUG-14: o menu já abre recortado pelo papel da sessão
   atualizarCotacao();
   renderAgenda();
   renderAlertas();
   renderNovas();
   renderSaldos();
   renderProximas();
-  renderLancamentos();
-  renderCaixa();
   renderPontoHoje();
-  atualizarSaldoFicha('Ana Souza');
-  renderOdontograma('Ana Souza');
-  renderHistoricoFinanceiro('Ana Souza');
-  renderFeedbackPaciente('Ana Souza');
   abrirAba('resumo');
+
+  /* ============================================================
+     BOOT: licença (GET /api/licenca, livre) -> sessão -> dados.
+     Sem token a UI fica no overlay de login; licença expirada
+     bloqueia o próprio login; rede fora não quebra a tela.
+     ============================================================ */
+  async function entrarComToken(){
+    await carregarPacientes();
+    const nome = patients[pacienteAtual] ? pacienteAtual : (pacientesLista[0] && pacientesLista[0].nome);
+    if(nome) await openPatient(nome, 'resumo');
+    if(podeSetor('dinheiro')){
+      await carregarLancamentos();   // tela Dinheiro: extrato e caixa do banco (BUG-04)
+      await carregarCaixa();
+    }
+    if(podeSetor('atendimento')) carregarPainelRobo();
+    renderPontoHoje();
+    document.getElementById('loginOverlay').classList.remove('open');
+    document.getElementById('topAvatar').textContent = (usuarioDaSessao() || 'U').charAt(0).toUpperCase();
+  }
+  async function ligarSistema(){
+    try{
+      const estado = await api('/api/licenca', {semToken:true});
+      licencaAtiva = !estado || estado.ativa !== false;
+      licencaConferida = true;
+    }catch(erro){
+      licencaConferida = false;      // servidor fora do ar: avisa e não trava
+    }
+    if(licencaConferida && !licencaAtiva){ mostrarAvisoLicenca(); return; }
+    if(!token()){
+      document.getElementById('loginOverlay').classList.add('open');   // sem token → é login
+      return;
+    }
+    try{
+      await entrarComToken();
+    }catch(erro){
+      if(!erro.rede) avisar(erro);
+      document.getElementById('loginOverlay').classList.add('open');
+    }
+  }
+
+  /* ===== Novo orçamento (POST /api/pacientes/<id>/orcamentos) ===== */
+  document.getElementById('btnNovoOrcamento').addEventListener('click', ()=>{
+    const p = patients[pacienteAtual];
+    if(!p || !p.id){ toast('Abra a ficha do paciente antes de montar o orçamento'); return; }
+    document.getElementById('orcModalPaciente').textContent = pacienteAtual;
+    document.getElementById('orcDescricao').value = '';
+    document.getElementById('orcValor').value = '';
+    document.getElementById('orcMoeda').value = p.moeda || 'BRL';
+    abrirModal(document.getElementById('modalOrcamento'));
+    setTimeout(()=>{ try{ document.getElementById('orcDescricao').focus(); }catch(_){} }, 40);
+  });
+  document.getElementById('orcCancel').addEventListener('click', ()=>fecharModal(document.getElementById('modalOrcamento')));
+  document.getElementById('modalOrcamento').addEventListener('click', e=>{
+    if(e.target === document.getElementById('modalOrcamento')) fecharModal(document.getElementById('modalOrcamento'));
+  });
+  document.getElementById('orcOk').addEventListener('click', async ()=>{
+    const p = patients[pacienteAtual];
+    if(!p || !p.id){ toast('Abra a ficha do paciente antes de montar o orçamento'); return; }
+    const descricao = document.getElementById('orcDescricao').value.trim();
+    const valor = parseNum(document.getElementById('orcValor').value);
+    const moeda = document.getElementById('orcMoeda').value;
+    if(!descricao){ toast('Descreva o procedimento do orçamento'); return; }
+    if(!valor || valor <= 0){ toast('Informe um valor maior que zero'); return; }
+    const botao = document.getElementById('orcOk');
+    botao.disabled = true;
+    try{
+      await api('/api/pacientes/' + p.id + '/orcamentos', {metodo:'POST', corpo:{descricao:descricao, valor:valor, moeda:moeda}});
+      await carregarFicha(p.id);                 // orçamento e saldo voltam do banco
+      renderOrcPacientes();
+      if(pacienteAtual){ renderOrcDetalhe(pacienteAtual); atualizarSaldoFicha(pacienteAtual); }
+      renderSaldos();
+      fecharModal(document.getElementById('modalOrcamento'));
+      toast('Orçamento de ' + pacienteAtual + ' agora é ' + fmtMoeda(p.orcamento, p.moeda));
+    }catch(erro){
+      avisar(erro);
+    }finally{
+      botao.disabled = false;
+    }
+  });
+
+  ligarSistema();
 
   /* ===== BARRA DE MENUS DO PROGRAMA (as telas ficam na lateral, os comandos aqui) ===== */
   const itensMenu = [...document.querySelectorAll('.mb-item')];
@@ -3625,8 +4871,22 @@
     renderLancamentos();
     toast('Filtros de busca limpos');
   }
+  /* QA BUG-24: requestFullscreen() devolve uma Promise e o try/catch não pegava a recusa do
+     navegador ("Permissions check failed") — o clique falhava calado, sem recado nenhum.
+     Agora a recusa é esperada e contada na tela, como qualquer outro erro do sistema. */
+  async function alternarTelaCheia(){
+    try{
+      if(document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    }catch(erro){
+      toast('Este navegador não libera a tela cheia para o sistema'
+            + (erro && erro.message ? ' (' + erro.message + ')' : ''));
+      return false;
+    }
+    return true;
+  }
   const acoesMenu = {
-    'novo-paciente': ()=>{ go('pacientes'); abrirNovaConsulta(); escolherPacienteNC('', true); },
+    'novo-paciente': ()=>{ go('pacientes'); abrirNovoPaciente(); },
     'nova-consulta': ()=>abrirNovaConsulta(),
     'nova-evolucao': ()=>abrirNovaEvolucao(),
     'receber': ()=>abrirReceberGenerico(),
@@ -3642,12 +4902,7 @@
     'ir-time': ()=>go('equipe'),
     'ir-whatsapp': ()=>go('whatsapp'),
     'tema': ()=>document.getElementById('btnTema').click(),
-    'tela-cheia': ()=>{
-      try{
-        if(document.fullscreenElement) document.exitFullscreen();
-        else document.documentElement.requestFullscreen();
-      }catch(_){ toast('Este navegador não libera a tela cheia para o sistema'); }
-    },
+    'tela-cheia': ()=>alternarTelaCheia(),
     'lista-pacientes': ()=>go('pacientes'),
     'ficha-atual': ()=>openPatient(pacienteAtual),
     'novo-funcionario': ()=>{ go('equipe'); toast('Para editar cargo, escala e privilégios, clique no nome do funcionário na lista'); },
@@ -3670,10 +4925,29 @@
 
   /* ferramentas fixas da barra: imprimir e recarregar os dados deste PC */
   document.getElementById('btnImprimirTopo')?.addEventListener('click', ()=>window.print());
-  document.getElementById('btnAtualizarTopo')?.addEventListener('click', ()=>{
-    renderAgenda(); renderProximas(); renderAlertas(); renderNovas(); renderSaldos();
-    renderLancamentos(); renderCaixa(); renderPontoHoje();
-    toast('Dados do dia recarregados deste PC');
+  document.getElementById('btnAtualizarTopo')?.addEventListener('click', async ()=>{
+    /* QA BUG-11: o botão só redizia as listas na memória e dizia "recarregado" mesmo
+       sem servidor. Agora ele fala com a API e, se a rede estiver fora, quem avisa é
+       o aviso de rede (api() acende a faixa no topo) — nada de toast mentiroso. */
+    const botao = document.getElementById('btnAtualizarTopo');
+    if(botao) botao.disabled = true;
+    try{
+      await carregarPacientes();
+      if(podeSetor('dinheiro')){
+        await carregarLancamentos();
+        await carregarCaixa();
+      }
+      const id = pacienteAtual ? idDoPaciente(pacienteAtual) : null;
+      if(id) await carregarFicha(id);
+      renderAgenda(); renderProximas(); renderAlertas(); renderNovas(); renderSaldos();
+      renderPontoHoje();
+      if(pacienteAtual){ renderOrcPacientes(); renderOrcDetalhe(pacienteAtual); atualizarSaldoFicha(pacienteAtual); }
+      toast('Dados do dia recarregados do servidor');
+    }catch(erro){
+      avisar(erro);          // erro.rede = "Sem conexão com o servidor — a ação não foi salva"
+    }finally{
+      if(botao) botao.disabled = false;
+    }
   });
 
   /* relógio da faixa de título */
