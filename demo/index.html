@@ -2174,6 +2174,13 @@
       });
       return {moedas: moedas};
     };
+    const agenda = () => ([
+      {hora:'08:30', paciente:'Ana Souza',       tel:'5548991234567', procedimento:'Limpeza + flúor',   status:'confirmada'},
+      {hora:'09:40', paciente:'João Pereira',    tel:'5548988123344', procedimento:'Canal no 11',       status:'confirmada'},
+      {hora:'11:00', paciente:'Maria Lima',      tel:'5548996551122', procedimento:'Clareamento',       status:'agendada'},
+      {hora:'12:15', paciente:'Carlos Oliveira', tel:'595981222333',  procedimento:'Implante — 2ª fase', status:'confirmada'},
+      {hora:'16:00', paciente:'Fernanda Costa',  tel:'5548997448899', procedimento:'Restauração',       status:'agendada'}
+    ]);
     const configBot = {
       modo: 'auto',
       perfil: 'padrao',
@@ -2182,7 +2189,7 @@
       automacoes: {lembrete_24h:true, confirmacao:true, pos_consulta:true, captacao:true, indicacao:true, bilingue:true, revisao_secretaria:true}
     };
     return {fichas:fichas, orcamentos:orcamentos, evolucoes:evolucoes, pagamentos:pagamentos,
-            caixa:caixa, configBot:configBot, USUARIOS:USUARIOS, agora:agora, isoDia:isoDia,
+            caixa:caixa, agenda:agenda, configBot:configBot, USUARIOS:USUARIOS, agora:agora, isoDia:isoDia,
             proximoId: () => proximoId++};
   })();
 
@@ -2194,7 +2201,9 @@
     const metodo = (config && config.method) || 'GET';
     let corpo = {};
     try{ corpo = config && config.body ? JSON.parse(config.body) : {}; }catch(_){ corpo = {}; }
-    const rota = String(caminho).replace(/^https?:\/\/[^/]+/, '');
+    const rotaCompleta = String(caminho).replace(/^https?:\/\/[^/]+/, '');
+    const rota = rotaCompleta.split('?')[0];
+    const query = new URLSearchParams(rotaCompleta.split('?')[1] || '');
     const mId = rota.match(/^\/api\/pacientes\/(\d+)(?:\/([a-z]+))?$/);
 
     if(rota === '/api/licenca') return responder({ativa: true, ate: '2099-12-31'});
@@ -2217,7 +2226,12 @@
       const id = Number(mId[1]); const sub = mId[2];
       const ficha = _DEMO.fichas.find(f => f.id === id);
       if(!ficha) return responder({erro: 'paciente não encontrado'}, 404);
-      if(!sub && metodo === 'GET') return responder(ficha);
+      if(!sub && metodo === 'GET'){
+        const saldoPorMoeda = {};
+        if(Number(ficha.pendente) > 0) saldoPorMoeda[ficha.moeda || 'BRL'] =
+          {pendente: Number(ficha.pendente), pago: Number(ficha.pago) || 0};
+        return responder(Object.assign({saldoPorMoeda: saldoPorMoeda}, ficha));
+      }
       if(sub === 'financeiro' && metodo === 'GET') return responder({orcamentos: _DEMO.orcamentos[id] || []});
       if(sub === 'evolucoes' && metodo === 'GET') return responder(_DEMO.evolucoes[id] || []);
       if(sub === 'exames' && metodo === 'GET') return responder([]);
@@ -2252,11 +2266,304 @@
       }
       return responder(_DEMO.configBot);
     }
-    if(rota === '/api/pagamentos') return responder(_DEMO.pagamentos);
+    if(rota === '/api/pagamentos'){
+      const de = query.get('de');
+      if(de && /^\d{4}-\d{2}-\d{2}$/.test(de))
+        return responder(_DEMO.pagamentos.filter(p => p.data.slice(0,10) === de));
+      return responder(_DEMO.pagamentos);
+    }
     if(rota === '/api/caixa') return responder(_DEMO.caixa());
+    if(rota === '/api/agenda') return responder(_DEMO.agenda());
     return responder({erro: 'rota de demonstração não existe: ' + rota}, 404);
   }
 
+
+  /* ===========================================================================
+     MÓDULOS NOVOS (19/10/2026) — Laboratório, Estoque, Faturas PY e Configurações.
+     Tudo em memória: é demonstração, some quando recarrega a página.
+     =========================================================================== */
+  (function modulos(){
+    const TITULOS = {lab:'Laboratório', estoque:'Estoque', fatura:'Faturas (PY)', cfg:'Configurações'};
+    const PAPEIS = {lab:['admin','dentista','recepcao'], estoque:['admin','dentista','recepcao'],
+                    fatura:['admin','financeiro'], cfg:['admin']};
+
+    const proteses = [
+      {id:1, paciente:'Cesar Acosta', dentes:'11–15', tipo:'estetico', etapa:'preparo',
+       lab:'Lab. Sorriso', custo:1800000, refacoes:0, manual:null, dias:0, pagoLab:false, pagoPaciente:'parcial', provisorio:true},
+      {id:2, paciente:'Ana Souza', dentes:'12–22', tipo:'estetico', etapa:'laboratorio',
+       lab:'Lab. Sorriso', custo:1200000, refacoes:2, manual:null, dias:12, pagoLab:false, pagoPaciente:'não', provisorio:true},
+      {id:3, paciente:'Roberto Almeida', dentes:'36', tipo:'implante', etapa:'laboratorio',
+       lab:'Lab. Guarani', custo:950000, refacoes:1, manual:null, dias:4, pagoLab:true, pagoPaciente:'não', provisorio:true},
+      {id:4, paciente:'Maria Lima', dentes:'46', tipo:'implante', etapa:'prova',
+       lab:'Lab. Guarani', custo:880000, refacoes:0, manual:null, dias:2, pagoLab:false, pagoPaciente:'parcial', provisorio:false},
+      {id:5, paciente:'Fernanda Costa', dentes:'21–23', tipo:'estetico', etapa:'provisorio',
+       lab:'Lab. Sorriso', custo:1450000, refacoes:1, manual:'y', dias:1, pagoLab:false, pagoPaciente:'não', provisorio:true},
+      {id:6, paciente:'João Pereira', dentes:'11', tipo:'implante', etapa:'instalacao',
+       lab:'Lab. Guarani', custo:990000, refacoes:0, manual:null, dias:0, pagoLab:true, pagoPaciente:'pago', provisorio:false}
+    ];
+
+    const estoque = [
+      {nome:'Pasta profilática', un:'pote 1kg', min:'1 pote', troca:'02/09', uso:'1 a cada 34 limpezas', st:'ok'},
+      {nome:'Flúor gel', un:'pote 500g', min:'2 potes', troca:'15/09', uso:'1 a cada 21 aplicações', st:'warn'},
+      {nome:'Luva descartável', un:'caixa 100', min:'4 caixas', troca:'10/10', uso:'1 caixa a cada 9 dias', st:'ok'},
+      {nome:'Sugador descartável', un:'pacote', min:'3 pacotes', troca:'28/09', uso:'1 pacote a cada 2 dias', st:'bad'},
+      {nome:'Anestésico 2%', un:'caixa 50', min:'2 caixas', troca:'01/10', uso:'1 caixa a cada 15 dias', st:'ok'},
+      {nome:'Algodão', un:'pacote', min:'2 pacotes', troca:'12/10', uso:'1 pacote a cada 6 dias', st:'warn'},
+      {nome:'Resina A2', un:'seringa', min:'3', troca:'05/09', uso:'—', st:'bad'},
+      {nome:'Ácido fosfórico', un:'seringa', min:'2', troca:'20/09', uso:'—', st:'ok'}
+    ];
+
+    const faturas = [];
+
+    const moeda = v => 'Gs ' + Number(v||0).toLocaleString('pt-BR');
+    const ETAPAS = [['preparo','Preparo'],['laboratorio','Laboratório'],['prova','Prova'],['provisorio','Provisório'],['instalacao','Instalação']];
+    const corPrio = p => p.manual || (p.refacoes >= 2 ? 'r' : p.refacoes === 1 ? 'y' : 'g');
+
+    function estilos(){
+      const s = document.createElement('style');
+      s.textContent = `
+      #screen-lab .board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start}
+      #screen-lab .col{background:var(--panel,#151b23);border:1px solid var(--border,#28313d);border-radius:12px;padding:8px;min-height:120px}
+      #screen-lab .col h4{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted,#8b98a8);margin:2px 4px 8px;display:flex;justify-content:space-between}
+      .pcard{position:relative;border:1px solid var(--border,#28313d);border-radius:10px;padding:9px 24px 9px 10px;margin-bottom:8px;cursor:grab;background:var(--panel2,#1b222c);border-left-width:4px}
+      .pcard.est{border-left-color:#b083f0}.pcard.imp{border-left-color:#7c9cff}
+      .pcard .nome{font-weight:600;font-size:13px}
+      .pcard .det{font-size:11px;color:var(--muted,#8b98a8);line-height:1.5;margin-top:2px}
+      .pcard .ref{position:absolute;top:7px;right:7px;font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px;border:1px solid #f85149;color:#f85149;background:rgba(248,81,73,.12)}
+      .pcard .prio{position:absolute;right:0;top:8px;bottom:8px;width:5px;border-radius:4px}
+      .prio.g{background:#3fb950}.prio.y{background:#d8a200}.prio.r{background:#f85149}
+      .pcard .acoes{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+      .pcard .acoes button{font-size:10px;padding:2px 6px;border-radius:6px;border:1px solid var(--border,#28313d);background:transparent;color:var(--muted,#8b98a8);cursor:pointer}
+      .pcard .acoes button.on{color:#06231f;background:#4fd1c5;border-color:#4fd1c5;font-weight:600}
+      #screen-estoque .st, #screen-lab .st{display:inline-flex;gap:4px}
+      #screen-estoque .st button{font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border,#28313d);background:transparent;color:var(--muted,#8b98a8);cursor:pointer}
+      #screen-estoque .st button.on.ok{color:#3fb950;border-color:#3fb950;background:rgba(63,185,80,.14)}
+      #screen-estoque .st button.on.warn{color:#d8a200;border-color:#d8a200;background:rgba(216,162,0,.14)}
+      #screen-estoque .st button.on.bad{color:#f85149;border-color:#f85149;background:rgba(248,81,73,.14)}
+      .kude{background:#f7f5ef;color:#1a1a1a;border-radius:8px;padding:16px;font-family:Consolas,monospace;font-size:12px;line-height:1.7}
+      .kude .lin{display:flex;justify-content:space-between}
+      .kude hr{border:none;border-top:1px dashed #bbb;margin:7px 0}
+      .kude .tt{text-align:center;font-weight:700;letter-spacing:1px;font-size:12.5px}
+      `;
+      document.head.appendChild(s);
+    }
+
+    function secao(id, titulo){
+      const sec = document.createElement('section');
+      sec.className = 'screen';
+      sec.id = 'screen-' + id;
+      sec.innerHTML = '<div class="wrap"><h2 style="margin:0 0 14px">' + titulo + '</h2>' +
+                      '<div id="m-' + id + '"></div></div>';
+      const main = document.querySelector('main') || document.body;
+      main.appendChild(sec);
+      return sec;
+    }
+
+    /* ---------- LABORATÓRIO ---------- */
+    function desenhaLab(){
+      const alvo = document.getElementById('m-lab');
+      let h = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">' +
+        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted,#8b98a8)">Kanban geral · ' + proteses.length + ' trabalhos</span>' +
+        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:#f85149;border-color:#f85149">' +
+          proteses.filter(p=>corPrio(p)==='r').length + ' em prioridade vermelha</span>' +
+        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted,#8b98a8)">' +
+          moeda(proteses.filter(p=>p.etapa!=='instalacao').reduce((s,p)=>s+p.custo,0)) + ' em laboratório</span></div>' +
+        '<div class="board">';
+      ETAPAS.forEach(([id, nome])=>{
+        const lista = proteses.filter(p=>p.etapa===id);
+        h += '<div class="col" data-etapa="' + id + '"><h4>' + nome + ' <span>' + lista.length + '</span></h4>';
+        lista.forEach(p=>{
+          h += '<div class="pcard ' + (p.tipo==='estetico'?'est':'imp') + '" draggable="true" data-id="' + p.id + '">' +
+               '<span class="ref">' + p.refacoes + '</span>' +
+               '<span class="prio ' + corPrio(p) + '"></span>' +
+               '<div class="nome">' + p.paciente + '</div>' +
+               '<div class="det">' + (p.tipo==='estetico'?'Estético':'Implante') + ' · dentes ' + p.dentes + '<br>' +
+               p.lab + ' · ' + moeda(p.custo) + '<br>' +
+               (p.dias > 0 ? 'parado há ' + p.dias + ' dias' : 'em dia') +
+               (p.provisorio ? ' · provisório' : '') + '</div>' +
+               '<div class="acoes">' +
+                 '<button data-ref="' + p.id + '">+ refação</button>' +
+                 ['g','y','r'].map(c=>'<button data-prio="' + p.id + '" data-cor="' + c + '" class="' + (p.manual===c?'on':'') + '">' + ({g:'verde',y:'amar.',r:'verm.'})[c] + '</button>').join('') +
+               '</div></div>';
+        });
+        h += '</div>';
+      });
+      h += '</div><p style="color:var(--muted,#8b98a8);font-size:12px;margin-top:12px">' +
+           'Arraste o cartão pra mudar de etapa. A faixa da direita é automática pelo número de refações ' +
+           '(0 verde, 1 amarelo, 2+ vermelho) e a marcação manual manda mais que a automática.</p>';
+      alvo.innerHTML = h;
+
+      alvo.querySelectorAll('[data-ref]').forEach(b=>b.onclick=()=>{
+        const p = proteses.find(x=>x.id===+b.dataset.ref); p.refacoes++; desenhaLab();
+      });
+      alvo.querySelectorAll('[data-prio]').forEach(b=>b.onclick=()=>{
+        const p = proteses.find(x=>x.id===+b.dataset.prio);
+        p.manual = (p.manual === b.dataset.cor) ? null : b.dataset.cor; desenhaLab();
+      });
+      alvo.querySelectorAll('.pcard').forEach(c=>{
+        c.ondragstart = e => e.dataTransfer.setData('text/plain', c.dataset.id);
+      });
+      alvo.querySelectorAll('.col').forEach(col=>{
+        col.ondragover = e => e.preventDefault();
+        col.ondrop = e => {
+          e.preventDefault();
+          const id = +e.dataTransfer.getData('text/plain');
+          const p = proteses.find(x=>x.id===id);
+          if(!p) return;
+          p.etapa = col.dataset.etapa; p.dias = 0;
+          desenhaLab();
+        };
+      });
+    }
+
+    /* ---------- ESTOQUE ---------- */
+    function desenhaEstoque(){
+      const alvo = document.getElementById('m-estoque');
+      const urgentes = estoque.filter(i=>i.st==='bad').length;
+      let h = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">' +
+        '<span class="pill" style="border:1px solid var(--border,#28313d);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted,#8b98a8)">Inventário de segunda · 8h · quem conta: Edelma</span>' +
+        '<span class="pill" style="border:1px solid #f85149;color:#f85149;border-radius:999px;padding:6px 12px;font-size:12px">' + urgentes + ' urgentes</span>' +
+        '<span class="pill" style="border:1px solid #d8a200;color:#d8a200;border-radius:999px;padding:6px 12px;font-size:12px">' + estoque.filter(i=>i.st==='warn').length + ' a comprar</span>' +
+        '<button class="btn" id="btnCompras" style="margin-left:auto">Gerar lista de compras</button></div>' +
+        '<table><thead><tr><th>Material</th><th>Unidade</th><th>Mínimo</th><th>Última troca</th><th>Uso médio</th><th>Status</th></tr></thead><tbody>';
+      estoque.forEach((it, i)=>{
+        h += '<tr><td><b>' + it.nome + '</b></td><td>' + it.un + '</td><td>' + it.min + '</td><td>' + it.troca + '</td>' +
+             '<td style="font-size:11.5px;color:var(--muted,#8b98a8)">' + it.uso + '</td>' +
+             '<td><span class="st">' +
+               ['ok','warn','bad'].map(c=>'<button data-i="' + i + '" data-st="' + c + '" class="' + c + (it.st===c?' on':'') + '">' +
+                 ({ok:'Suficiente',warn:'Comprar',bad:'Urgente'})[c] + '</button>').join('') +
+             '</span></td></tr>';
+      });
+      h += '</tbody></table>';
+      alvo.innerHTML = h;
+      alvo.querySelectorAll('.st button').forEach(b=>b.onclick=()=>{
+        estoque[+b.dataset.i].st = b.dataset.st; desenhaEstoque();
+      });
+      document.getElementById('btnCompras').onclick = ()=>{
+        const lista = estoque.filter(i=>i.st!=='ok').map(i=>i.nome + ' (' + i.un + ')');
+        alert('Lista de compras\n\n' + (lista.length ? lista.join('\n') : 'nada pra comprar'));
+      };
+    }
+
+    /* ---------- FATURAS ---------- */
+    function desenhaFatura(){
+      const alvo = document.getElementById('m-fatura');
+      alvo.innerHTML =
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+          '<div class="card" style="padding:16px;border:1px solid var(--border,#28313d);border-radius:12px">' +
+            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Cliente</label><input id="fNome" value="Maria Lima" style="width:100%;margin:4px 0 10px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit">' +
+            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Documento</label>' +
+            '<div style="display:flex;gap:6px;margin:4px 0 10px"><select id="fTipo" style="padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>C.I.</option><option>RUC</option><option>CPF</option></select>' +
+            '<input id="fNum" value="4.562.118" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"></div>' +
+            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Concepto</label><input id="fDesc" value="Tratamento endodôntico — dente 46" style="width:100%;margin:4px 0 10px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit">' +
+            '<label style="font-size:11px;color:var(--muted,#8b98a8)">Valor (Gs)</label><input id="fVal" value="1250000" style="width:100%;margin:4px 0 10px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit">' +
+            '<label style="font-size:11px;color:var(--muted,#8b98a8)">IVA</label><select id="fIva" style="width:100%;margin:4px 0 14px;padding:8px;border-radius:8px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>10%</option><option>5%</option><option>Exento</option></select>' +
+            '<button class="btn" id="btnEmitir" style="background:#4fd1c5;color:#06231f;font-weight:600">Emitir e enviar ao SIFEN</button>' +
+            '<p style="color:var(--muted,#8b98a8);font-size:12px;margin-top:12px">Gratuito pela web: e-kuatia’i (DNIT), mas é manual. Automático: API paga (Sifende) — Gs 44.900/mês até 50 notas.</p>' +
+          '</div>' +
+          '<div class="card" style="padding:16px;border:1px solid var(--border,#28313d);border-radius:12px">' +
+            '<div id="kudeBox"></div></div>' +
+        '</div>';
+
+      const kude = ()=>{
+        const nome = document.getElementById('fNome').value;
+        const tipo = document.getElementById('fTipo').value;
+        const num  = document.getElementById('fNum').value;
+        const desc = document.getElementById('fDesc').value;
+        const val  = Number(document.getElementById('fVal').value)||0;
+        const iva  = document.getElementById('fIva').value;
+        const ivaV = iva==='Exento' ? 0 : Math.round(val * (iva==='10%'?0.1:0.05) / (1 + (iva==='10%'?0.1:0.05)));
+        document.getElementById('kudeBox').innerHTML =
+          '<div class="kude"><div class="tt">CLÍNICA DENTAL DR. CARLOS &amp; DRA. MARIANA</div>' +
+          '<div style="text-align:center;font-size:10.5px">RUC 80012345-6 · Timbrado 12345678</div><hr>' +
+          '<div class="lin"><span>FACTURA ELECTRÓNICA</span><span>001-001-0000042</span></div>' +
+          '<div class="lin"><span>Fecha</span><span>' + new Date().toLocaleString('pt-BR') + '</span></div><hr>' +
+          '<div class="lin"><span>Cliente</span><span>' + nome + '</span></div>' +
+          '<div class="lin"><span>' + tipo + '</span><span>' + num + '</span></div><hr>' +
+          '<div class="lin"><span>' + desc + '</span><span>' + val.toLocaleString('pt-BR') + '</span></div>' +
+          '<div class="lin"><span>IVA ' + iva + '</span><span>' + ivaV.toLocaleString('pt-BR') + '</span></div><hr>' +
+          '<div class="lin"><b>TOTAL</b><b>Gs ' + val.toLocaleString('pt-BR') + '</b></div>' +
+          '<div style="text-align:center;margin-top:8px;font-size:10px">CDC 01001000000112026101916042000042<br>[ QR do SIFEN ]</div></div>' +
+          '<p id="fStatus" style="color:var(--muted,#8b98a8);font-size:12px;margin-top:8px">Prévia — nada enviado ainda.</p>';
+      };
+      ['fNome','fTipo','fNum','fDesc','fVal','fIva'].forEach(id=>{
+        document.getElementById(id).oninput = kude;
+        document.getElementById(id).onchange = kude;
+      });
+      document.getElementById('btnEmitir').onclick = ()=>{
+        document.getElementById('fStatus').innerHTML = '<span style="color:#3fb950">Aprovada pelo SIFEN · enviada no WhatsApp do paciente (PDF).</span>';
+        faturas.push({nome:document.getElementById('fNome').value, valor:document.getElementById('fVal').value});
+      };
+      kude();
+    }
+
+    /* ---------- CONFIGURAÇÕES ---------- */
+    function desenhaCfg(){
+      const alvo = document.getElementById('m-cfg');
+      const linha = (rotulo, valor, dica) =>
+        '<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border,#28313d)">' +
+        '<div><b style="font-size:13px">' + rotulo + '</b><div style="font-size:11.5px;color:var(--muted,#8b98a8)">' + dica + '</div></div>' +
+        '<div style="min-width:190px">' + valor + '</div></div>';
+      alvo.innerHTML = '<div class="card" style="padding:6px 16px 16px;border:1px solid var(--border,#28313d);border-radius:12px">' +
+        linha('Aviso de prótese parada', '<input value="10" style="width:70px;padding:5px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"> dias', 'quando o trabalhão fica muito tempo no laboratório') +
+        linha('Dia do inventário', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Segunda</option><option>Terça</option><option>Sexta</option></select>', 'dia da contagem de estoque') +
+        linha('Aviso de estoque', '<input value="1" style="width:60px;padding:5px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"> semana antes', 'sempre uma semana antes de acabar') +
+        linha('Gravar consultas', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Manual (aperta quando quer)</option><option>Automático</option></select>', 'qualidade, pasta de destino e resumo de madrugada') +
+        linha('Resumo da gravação', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Depois das 18h</option><option>Depois do último ponto</option></select>', 'processa à noite, pronto no outro dia') +
+        linha('Cotação automática', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>Ligada</option><option>Manual</option></select>', 'real, dólar e guaraní') +
+        linha('Cobrança', '<select style="padding:6px;border-radius:6px;border:1px solid var(--border,#28313d);background:var(--panel2,#1b222c);color:inherit"><option>1 lembrete + 1 fatura</option><option>Não cobrar</option></select>', 'nunca insiste mais de uma vez por semana') +
+        '</div>' +
+        '<div class="card" style="padding:16px;margin-top:14px;border:1px solid var(--border,#28313d);border-radius:12px">' +
+        '<b style="font-size:13px">Permissões</b><div style="font-size:11.5px;color:var(--muted,#8b98a8);margin:4px 0 10px">caixinhas por pessoa — não é mais papel fixo</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;font-size:12.5px">' +
+        ['Agenda','Pacientes','Prontuário','Financeiro ver','Financeiro receber','Custo do laboratório','Estoque','Robô','Relatórios','Configurações','Equipe','Nota fiscal']
+          .map(p=>'<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" checked> ' + p + '</label>').join('') +
+        '</div></div>';
+    }
+
+    function monta(){
+      estilos();
+      secao('lab','Laboratório');
+      secao('estoque','Estoque');
+      secao('fatura','Faturas (PY)');
+      secao('cfg','Configurações');
+
+      const nav = document.querySelector('nav.nav');
+      if(!nav) return;
+      const grupo = document.createElement('div');
+      grupo.className = 'nav-grupo';
+      grupo.textContent = 'Clínica';
+      nav.appendChild(grupo);
+
+      Object.keys(TITULOS).forEach(id=>{
+        const b = document.createElement('button');
+        b.dataset.extra = id;
+        b.innerHTML = '<span class="ico">•</span><span>' + TITULOS[id] + '</span>';
+        b.onclick = ()=>{
+          document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+          document.getElementById('screen-' + id).classList.add('active');
+          document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active', x.dataset.extra === id));
+          document.getElementById('topTitle').textContent = TITULOS[id];
+          if(id==='lab') desenhaLab();
+          if(id==='estoque') desenhaEstoque();
+          if(id==='fatura') desenhaFatura();
+          if(id==='cfg') desenhaCfg();
+          window.scrollTo({top:0,behavior:'smooth'});
+        };
+        nav.appendChild(b);
+      });
+
+      document.querySelectorAll('.nav button[data-screen]').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+          b.classList.add('active');
+        });
+      });
+    }
+
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', monta);
+    else monta();
+  })();
   async function api(caminho, opcoes){
     opcoes = opcoes || {};
     const cabecalhos = Object.assign({}, opcoes.cabecalhos || {});
