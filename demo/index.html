@@ -2129,6 +2129,7 @@
       'pedro':    {senha: '1234', nome: 'Pedro',    papel: 'financeiro'}
     };
     let proximoId = 7;
+    const examesDB = {};
     const fichas = [
       {id:1, nome:'Ana Souza',      tel:'(48) 99123-4567', sexo:'F', idade:34, idioma:'PT', moeda:'BRL', cpf:'123.456.789-00', comoConheceu:'Instagram', orcamento:1800, pago:1500, pendente:300, dentes:{'26':'tratar','36':'ok'}},
       {id:2, nome:'João Pereira',   tel:'(48) 98812-3344', sexo:'M', idade:52, idioma:'PT', moeda:'BRL', cpf:'234.567.890-11', comoConheceu:'Indicação', orcamento:2400, pago:2400, pendente:0, dentes:{'11':'ok'}},
@@ -2161,6 +2162,139 @@
       {nome:'Ana Souza',       forma:'Pix',           moeda:'BRL', valor:1250,  data:isoDia(-5) + ' 15:10'},
       {nome:'Maria Lima',      forma:'Dinheiro',      moeda:'BRL', valor:400,   data:isoDia(-8) + ' 09:15'}
     ];
+    const EXTRAS = [
+    {id:7, nome:"Ricardo Nunes", tel:"(48) 99812-7711", sexo:"M", idade:44, idioma:"PT", moeda:"BRL", cpf:"111.222.333-44", comoConheceu:"Indicação", orcamento:6000, pago:3600, pendente:2400, dentes:{"36": "problema", "35": "tratar", "37": "tratar"}, tipo:"Particular", desde:"mar/2023", ultOff:-4, prox:"19/10 14:00", queixa:"Implante no 36 que soltou a coroa",
+     orc:[{descricao:"Consulta + tomografia", valor:400, dente:"36"},{descricao:"Implante unitário cone morse", valor:3200, dente:"36"},{descricao:"Coroa de zircônia", valor:2400, dente:"36"}],
+     evo:[{procedimento:"Instalação do implante 36", valor:3200},{procedimento:"Ajuste de provisório", valor:400}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-12", impl:[36], faltam:[35, 37]},{tipo:"Periapical", data:"2026-07-03", impl:[], faltam:[47]}]},
+    {id:8, nome:"Beatriz Farias", tel:"(48) 99641-2200", sexo:"F", idade:31, idioma:"PT", moeda:"BRL", cpf:"222.333.444-55", comoConheceu:"Instagram", orcamento:1800, pago:1800, pendente:0, dentes:{"11": "ok", "21": "ok"}, tipo:"Convênio", desde:"jan/2024", ultOff:-11, prox:"20/10 09:00", queixa:"Clareamento e limpeza de rotina",
+     orc:[{descricao:"Limpeza + flúor", valor:250, dente:"—"},{descricao:"Clareamento a laser (3 sessões)", valor:1550, dente:"—"}],
+     evo:[{procedimento:"Limpeza", valor:250},{procedimento:"Clareamento 1/3", valor:500},{procedimento:"Clareamento 2/3", valor:550}],
+     exa:[{tipo:"Periapical", data:"2026-08-22", impl:[], faltam:[11, 21]}]},
+    {id:9, nome:"Eduardo Kaminski", tel:"(48) 98877-4411", sexo:"M", idade:58, idioma:"PT", moeda:"BRL", cpf:"333.444.555-66", comoConheceu:"Indicação", orcamento:7200, pago:0, pendente:7200, dentes:{"16": "problema", "17": "problema", "26": "problema", "27": "tratar", "14": "tratar", "24": "tratar"}, tipo:"Particular", desde:"set/2022", ultOff:-2, prox:"19/10 17:30", queixa:"Boca toda: reabilitação superior",
+     orc:[{descricao:"Protocolo superior (5 implantes)", valor:4800, dente:"16-26"},{descricao:"Prótese protocolo superior", valor:2400, dente:"16-26"}],
+     evo:[{procedimento:"Cirurgia 1ª fase — 5 implantes", valor:4800}],
+     exa:[{tipo:"Panorâmica", data:"2026-10-02", impl:[16, 17, 26], faltam:[14, 24, 27]},{tipo:"Tomografia", data:"2026-09-20", impl:[], faltam:[16, 26]},{tipo:"Periapical", data:"2026-06-14", impl:[], faltam:[16]}]},
+    {id:10, nome:"Luciana Prado", tel:"(48) 99110-3322", sexo:"F", idade:27, idioma:"PT", moeda:"BRL", cpf:"444.555.666-77", comoConheceu:"Google", orcamento:900, pago:900, pendente:0, dentes:{"13": "tratar", "23": "tratar"}, tipo:"Particular", desde:"mai/2025", ultOff:-6, prox:"22/10 10:00", queixa:"Sensibilidade nos caninos",
+     orc:[{descricao:"Restauração estética 13", valor:450, dente:"13"},{descricao:"Restauração estética 23", valor:450, dente:"23"}],
+     evo:[{procedimento:"Restauração 13", valor:450}],
+     exa:[{tipo:"Periapical", data:"2026-09-30", impl:[], faltam:[13, 23]}]},
+    {id:11, nome:"Gustavo Villalba", tel:"+595 981 771 220", sexo:"M", idade:39, idioma:"ES", moeda:"GS", ruc:"80045612-3", comoConheceu:"WhatsApp", orcamento:3000000, pago:800000, pendente:2200000, dentes:{"46": "problema", "45": "tratar"}, tipo:"Particular", desde:"fev/2025", ultOff:-3, prox:"20/10 08:30", queixa:"Dente 46 quebrado, dor ao mastigar",
+     orc:[{descricao:"Extração 46", valor:600000, dente:"46"},{descricao:"Implante 46 com enxerto", valor:1800000, dente:"46"},{descricao:"Coroa metalocerâmica", valor:600000, dente:"46"}],
+     evo:[{procedimento:"Extração 46 + enxerto", valor:600000},{procedimento:"Instalação do implante", valor:800000}],
+     exa:[{tipo:"Panorâmica", data:"2026-10-08", impl:[46], faltam:[47]},{tipo:"Tomografia", data:"2026-10-01", impl:[], faltam:[46]}]},
+    {id:12, nome:"Patrícia Lemos", tel:"(48) 99322-8877", sexo:"F", idade:36, idioma:"PT", moeda:"BRL", cpf:"555.666.777-88", comoConheceu:"Facebook", orcamento:3600, pago:2400, pendente:1200, dentes:{"25": "tratar", "26": "ok"}, tipo:"Particular", desde:"nov/2023", ultOff:-5, prox:"21/10 15:00", queixa:"Canal no 25 com abscesso",
+     orc:[{descricao:"Endodontia 25 (3 sessões)", valor:1800, dente:"25"},{descricao:"Restauração 25", valor:600, dente:"25"},{descricao:"Tomografia do dente", valor:400, dente:"25"}],
+     evo:[{procedimento:"Endodontia 25 — 1/3", valor:600},{procedimento:"Endodontia 25 — 2/3", valor:600},{procedimento:"Radiografia de controle", valor:0}],
+     exa:[{tipo:"Periapical", data:"2026-10-10", impl:[], faltam:[25]},{tipo:"Periapical", data:"2026-09-15", impl:[], faltam:[25]}]},
+    {id:13, nome:"Thiago Moretti", tel:"(48) 98100-5566", sexo:"M", idade:45, idioma:"PT", moeda:"BRL", cpf:"666.777.888-99", comoConheceu:"Indicação", orcamento:4200, pago:4200, pendente:0, dentes:{"35": "problema", "45": "problema"}, tipo:"Convênio", desde:"abr/2024", ultOff:-8, prox:"23/10 11:30", queixa:"Reabilitação com 2 implantes inferiores",
+     orc:[{descricao:"Implante 35", valor:2600, dente:"35"},{descricao:"Implante 45", valor:2600, dente:"45"}],
+     evo:[{procedimento:"Cirurgia implante 35", valor:2600},{procedimento:"Cirurgia implante 45", valor:1600}],
+     exa:[{tipo:"Panorâmica", data:"2026-08-30", impl:[35, 45], faltam:[]},{tipo:"Periapical", data:"2026-08-30", impl:[], faltam:[35]}]},
+    {id:14, nome:"Camila Bittencourt", tel:"(48) 99988-1122", sexo:"F", idade:22, idioma:"PT", moeda:"BRL", cpf:"777.888.999-00", comoConheceu:"Instagram", orcamento:700, pago:350, pendente:350, dentes:{"12": "ok", "22": "ok", "33": "ok"}, tipo:"Particular", desde:"jun/2025", ultOff:-13, prox:"26/10 09:30", queixa:"Aparelho ortodôntico — manutenção",
+     orc:[{descricao:"Manutenção de aparelho", valor:350, dente:"—"}],
+     evo:[{procedimento:"Manutenção mensal", valor:350}],
+     exa:[{tipo:"Panorâmica", data:"2026-05-18", impl:[], faltam:[48, 38]},{tipo:"Periapical", data:"2026-05-18", impl:[], faltam:[12]}]},
+    {id:15, nome:"Sérgio Domingues", tel:"(48) 98444-7711", sexo:"M", idade:67, idioma:"PT", moeda:"BRL", cpf:"888.999.000-11", comoConheceu:"Indicação", orcamento:3600, pago:0, pendente:3600, dentes:{"31": "problema", "32": "problema", "41": "problema", "42": "problema"}, tipo:"Particular", desde:"jan/2022", ultOff:-1, prox:"19/10 10:15", queixa:"Prótese total inferior caindo",
+     orc:[{descricao:"Prótese total inferior (2 tubos)", valor:2400, dente:"31-42"},{descricao:"Ajustes e reembasamento", valor:1200, dente:"—"}],
+     evo:[{procedimento:"Moldagem prótese inferior", valor:2400}],
+     exa:[{tipo:"Panorâmica", data:"2026-10-05", impl:[], faltam:[31, 32, 41, 42]},{tipo:"Tomografia", data:"2026-07-21", impl:[], faltam:[31, 41]}]},
+    {id:16, nome:"Aline Schroeder", tel:"(48) 99771-6644", sexo:"F", idade:33, idioma:"PT", moeda:"BRL", cpf:"999.000.111-22", comoConheceu:"Google", orcamento:1350, pago:1350, pendente:0, dentes:{"38": "problema", "48": "problema"}, tipo:"Convênio", desde:"mar/2025", ultOff:-16, prox:"27/10 14:30", queixa:"Extração dos sisos",
+     orc:[{descricao:"Extração 38", valor:600, dente:"38"},{descricao:"Extração 48", valor:750, dente:"48"}],
+     evo:[{procedimento:"Extração 38", valor:600},{procedimento:"Extração 48", valor:750}],
+     exa:[{tipo:"Panorâmica", data:"2026-06-02", impl:[], faltam:[38, 48]}]},
+    {id:17, nome:"Marcelo Zonta", tel:"+595 971 220 330", sexo:"M", idade:50, idioma:"ES", moeda:"USD", ci:"3.222.111", comoConheceu:"WhatsApp", orcamento:1350, pago:900, pendente:450, dentes:{"26": "problema"}, tipo:"Particular", desde:"ago/2024", ultOff:-7, prox:"20/10 16:00", queixa:"Coroa solta no 26 — paciente do PY paga em dólar",
+     orc:[{descricao:"Reinstalação de coroa + pino", valor:450, dente:"26"},{descricao:"Coroa nova metalocerâmica", valor:900, dente:"26"}],
+     evo:[{procedimento:"Reinstalação coronária", valor:450}],
+     exa:[{tipo:"Periapical", data:"2026-09-28", impl:[], faltam:[26]}]},
+    {id:18, nome:"Juliana Amaral", tel:"(48) 99540-7712", sexo:"F", idade:29, idioma:"PT", moeda:"BRL", cpf:"101.202.303-44", comoConheceu:"Instagram", orcamento:600, pago:600, pendente:0, dentes:{"11": "ok", "12": "ok", "21": "ok", "22": "ok"}, tipo:"Particular", desde:"set/2025", ultOff:-20, prox:"29/10 08:00", queixa:"Avaliação para lentes de contato",
+     orc:[{descricao:"Avaliação + planejamento digital", valor:600, dente:"11-22"}],
+     evo:[{procedimento:"Avaliação inicial", valor:600}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-01", impl:[], faltam:[18, 28]}]},
+    {id:19, nome:"Henrique Bastos", tel:"(48) 98111-2200", sexo:"M", idade:41, idioma:"PT", moeda:"BRL", cpf:"212.323.434-55", comoConheceu:"Indicação", orcamento:1800, pago:0, pendente:1800, dentes:{"17": "tratar", "27": "tratar"}, tipo:"Particular", desde:"out/2023", ultOff:-9, prox:"21/10 17:00", queixa:"Gengiva sangrando ao escovar",
+     orc:[{descricao:"Raspagem periodontal (4 quadrantes)", valor:1800, dente:"—"}],
+     evo:[{procedimento:"Raspagem 1/2 boca", valor:900}],
+     exa:[{tipo:"Periapical", data:"2026-08-14", impl:[], faltam:[17]},{tipo:"Panorâmica", data:"2026-08-14", impl:[], faltam:[18, 28]}]},
+    {id:20, nome:"Sofia Mendez", tel:"+595 985 664 112", sexo:"F", idade:24, idioma:"ES", moeda:"GS", ruc:"80099887-1", comoConheceu:"WhatsApp", orcamento:900000, pago:0, pendente:900000, dentes:{"48": "problema"}, tipo:"Particular", desde:"dez/2025", ultOff:-12, prox:"19/10 11:00", queixa:"Dor de dente do siso 48",
+     orc:[{descricao:"Extração 48 inclusa", valor:900000, dente:"48"}],
+     evo:[{procedimento:"Radiografia pré-cirúrgica", valor:0}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-25", impl:[], faltam:[48]},{tipo:"Periapical", data:"2026-09-25", impl:[], faltam:[48]}]},
+    {id:21, nome:"Otávio Correia", tel:"(48) 99022-3344", sexo:"M", idade:35, idioma:"PT", moeda:"BRL", cpf:"313.424.535-66", comoConheceu:"Google", orcamento:2400, pago:2400, pendente:0, dentes:{"21": "problema"}, tipo:"Convênio", desde:"fev/2024", ultOff:-10, prox:"24/10 10:30", queixa:"Fratura de incisivo por queda",
+     orc:[{descricao:"Restauração em resina 21", valor:700, dente:"21"},{descricao:"Faceta 21", valor:1700, dente:"21"}],
+     evo:[{procedimento:"Restauração 21", valor:700}],
+     exa:[{tipo:"Periapical", data:"2026-10-01", impl:[], faltam:[21]},{tipo:"Tomografia", data:"2026-09-30", impl:[], faltam:[21]}]},
+    {id:22, nome:"Renata Vasconcelos", tel:"(48) 99666-1188", sexo:"F", idade:48, idioma:"PT", moeda:"BRL", cpf:"414.525.636-77", comoConheceu:"Indicação", orcamento:9000, pago:3600, pendente:5400, dentes:{"13": "problema", "14": "problema", "15": "tratar", "11": "ok", "21": "ok", "12": "tratar"}, tipo:"Particular", desde:"abr/2022", ultOff:-2, prox:"20/10 13:30", queixa:"Reabilitação superior com 3 implantes + protocolo curto",
+     orc:[{descricao:"3 implantes superiores", valor:7200, dente:"13-15"},{descricao:"Protocolo curto", valor:1800, dente:"13-15"}],
+     evo:[{procedimento:"Cirurgia 3 implantes", valor:5400},{procedimento:"Instalação da barra", valor:3600}],
+     exa:[{tipo:"Panorâmica", data:"2026-10-03", impl:[13, 14, 15], faltam:[12]},{tipo:"Tomografia", data:"2026-09-10", impl:[], faltam:[13, 14, 15]}]},
+    {id:23, nome:"Diego Fontana", tel:"(48) 98733-9911", sexo:"M", idade:26, idioma:"PT", moeda:"BRL", cpf:"515.636.747-88", comoConheceu:"Instagram", orcamento:500, pago:500, pendente:0, dentes:{"47": "problema"}, tipo:"Particular", desde:"jul/2025", ultOff:-17, prox:"28/10 15:30", queixa:"Urgência: dor no 47",
+     orc:[{descricao:"Restauração provisória 47", valor:500, dente:"47"}],
+     evo:[{procedimento:"Curativo de urgência", valor:500}],
+     exa:[{tipo:"Periapical", data:"2026-07-12", impl:[], faltam:[47]}]},
+    {id:24, nome:"Priscila Hoffmann", tel:"(48) 98211-4433", sexo:"F", idade:38, idioma:"PT", moeda:"BRL", cpf:"616.747.858-99", comoConheceu:"Instagram", orcamento:2100, pago:0, pendente:2100, dentes:{"11": "ok", "12": "tratar", "21": "ok", "22": "tratar"}, tipo:"Convênio", desde:"mai/2023", ultOff:-6, prox:"22/10 08:30", queixa:"Clareamento + facetas nos 4 anteriores",
+     orc:[{descricao:"Clareamento (2 sessões)", valor:900, dente:"—"},{descricao:"Facetas de resina 12 e 22", valor:1200, dente:"12,22"}],
+     evo:[{procedimento:"Clareamento 1/2", valor:450},{procedimento:"Faceta 12", valor:600}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-05", impl:[], faltam:[18, 28]},{tipo:"Periapical", data:"2026-08-09", impl:[], faltam:[11, 21]}]},
+    {id:25, nome:"Alexandre Kruger", tel:"+595 981 335 449", sexo:"M", idade:62, idioma:"ES", moeda:"GS", ruc:"80012233-7", comoConheceu:"Indicação", orcamento:7500000, pago:3000000, pendente:4500000, dentes:{"36": "problema", "37": "tratar"}, tipo:"Particular", desde:"jan/2024", ultOff:-3, prox:"19/10 09:15", queixa:"Perda de implante antigo no 36",
+     orc:[{descricao:"Remoção do implante antigo", valor:500000, dente:"36"},{descricao:"Novo implante + enxerto", valor:4000000, dente:"36"},{descricao:"Coroa", valor:3000000, dente:"36"}],
+     evo:[{procedimento:"Remoção + limpeza cirúrgica", valor:500000},{procedimento:"Instalação novo implante", valor:3000000}],
+     exa:[{tipo:"Panorâmica", data:"2026-10-07", impl:[36], faltam:[37]},{tipo:"Tomografia", data:"2026-10-07", impl:[], faltam:[36]}]},
+    {id:26, nome:"Tatiane Silveira", tel:"(48) 99122-7788", sexo:"F", idade:53, idioma:"PT", moeda:"BRL", cpf:"717.858.969-11", comoConheceu:"Facebook", orcamento:1500, pago:0, pendente:0, dentes:{}, tipo:"Particular", desde:"out/2025", ultOff:0, prox:"19/10 15:45", queixa:"Primeira consulta — avaliação geral",
+     orc:[{descricao:"Consulta inicial + panorâmica", valor:300, dente:"—"},{descricao:"Limpeza", valor:250, dente:"—"}],
+     evo:[{procedimento:"Consulta inicial", valor:300}],
+     exa:[{tipo:"Panorâmica", data:"2026-10-19", impl:[], faltam:[18, 28, 38, 48]}]},
+    {id:27, nome:"Márcio Teixeira", tel:"(48) 98455-6611", sexo:"M", idade:55, idioma:"PT", moeda:"BRL", cpf:"818.969.070-22", comoConheceu:"Indicação", orcamento:16000, pago:6400, pendente:9600, dentes:{"31": "problema", "32": "problema", "33": "problema", "41": "problema", "42": "problema", "43": "problema"}, tipo:"Convênio", desde:"jun/2021", ultOff:-4, prox:"23/10 16:30", queixa:"Protocolo inferior completo",
+     orc:[{descricao:"Protocolo inferior (4 implantes)", valor:12000, dente:"31-43"},{descricao:"Prótese protocolo", valor:4000, dente:"31-43"}],
+     evo:[{procedimento:"Cirurgia 4 implantes", valor:9600},{procedimento:"Prova da barra", valor:2000}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-18", impl:[31, 32, 41, 42], faltam:[33, 43]},{tipo:"Tomografia", data:"2026-09-11", impl:[], faltam:[31, 41]}]},
+    {id:28, nome:"Vitória Campos", tel:"(48) 99933-2255", sexo:"F", idade:19, idioma:"PT", moeda:"BRL", cpf:"919.070.181-33", comoConheceu:"Instagram", orcamento:800, pago:800, pendente:0, dentes:{"38": "tratar"}, tipo:"Particular", desde:"fev/2026", ultOff:-14, prox:"26/10 14:00", queixa:"Avaliação de siso 38",
+     orc:[{descricao:"Extração 38 (planejada)", valor:800, dente:"38"}],
+     evo:[{procedimento:"Avaliação", valor:0}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-02", impl:[], faltam:[38, 48]}]},
+    {id:29, nome:"Fernando Batista", tel:"(48) 98044-1177", sexo:"M", idade:47, idioma:"PT", moeda:"BRL", cpf:"131.212.313-44", comoConheceu:"Indicação", orcamento:3300, pago:0, pendente:3300, dentes:{"24": "problema"}, tipo:"Particular", desde:"mar/2024", ultOff:-8, prox:"21/10 09:45", queixa:"Dente 24 fraturado após tratamento de canal",
+     orc:[{descricao:"Nova endodontia 24", valor:1200, dente:"24"},{descricao:"Pino + coroa", valor:2100, dente:"24"}],
+     evo:[{procedimento:"Retratamento 24", valor:1200}],
+     exa:[{tipo:"Periapical", data:"2026-10-04", impl:[], faltam:[24]},{tipo:"Periapical", data:"2026-08-27", impl:[], faltam:[24]}]},
+    {id:30, nome:"Cláudia Rezende", tel:"(48) 99377-8822", sexo:"F", idade:44, idioma:"PT", moeda:"BRL", cpf:"232.323.434-55", comoConheceu:"Google", orcamento:2000, pago:500, pendente:1500, dentes:{"17": "tratar"}, tipo:"Convênio", desde:"set/2023", ultOff:-5, prox:"22/10 11:00", queixa:"Aftas recorrentes e sangramento",
+     orc:[{descricao:"Terapia periodontal + laser", valor:1500, dente:"—"}],
+     evo:[{procedimento:"Raspagem supragengival", valor:500}],
+     exa:[{tipo:"Panorâmica", data:"2026-08-20", impl:[], faltam:[18, 28, 38, 48]}]},
+    {id:31, nome:"Rogério Pacheco", tel:"+595 984 556 771", sexo:"M", idade:70, idioma:"ES", moeda:"GS", ci:"4.118.229", comoConheceu:"WhatsApp", orcamento:1500000, pago:0, pendente:1500000, dentes:{"25": "problema", "26": "problema", "27": "problema"}, tipo:"Particular", desde:"nov/2024", ultOff:-2, prox:"20/10 15:00", queixa:"Prótese superior quebrada",
+     orc:[{descricao:"Prótese parcial removível superior", valor:1500000, dente:"24-27"}],
+     evo:[{procedimento:"Moldagem + prova", valor:1500000}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-29", impl:[], faltam:[25, 26, 27]},{tipo:"Periapical", data:"2026-09-29", impl:[], faltam:[24]}]},
+    {id:32, nome:"Isabela Nascimento", tel:"(48) 99255-6611", sexo:"F", idade:30, idioma:"PT", moeda:"BRL", cpf:"343.434.535-66", comoConheceu:"Instagram", orcamento:1550, pago:1550, pendente:0, dentes:{"13": "ok", "23": "ok"}, tipo:"Particular", desde:"abr/2025", ultOff:-19, prox:"30/10 10:00", queixa:"Clareamento pós-gestante",
+     orc:[{descricao:"Clareamento caseiro + laser", valor:1550, dente:"—"}],
+     evo:[{procedimento:"Clareamento", valor:1550}],
+     exa:[{tipo:"Periapical", data:"2026-06-25", impl:[], faltam:[13, 23]}]},
+    {id:33, nome:"Vitor Hugo Lima", tel:"(48) 98188-3344", sexo:"M", idade:28, idioma:"PT", moeda:"BRL", cpf:"454.545.656-77", comoConheceu:"Instagram", orcamento:750, pago:0, pendente:750, dentes:{"45": "problema"}, tipo:"Particular", desde:"ago/2026", ultOff:-1, prox:"19/10 18:00", queixa:"Dor aguda no 45",
+     orc:[{descricao:"Canal 45 (urgência)", valor:750, dente:"45"}],
+     evo:[{procedimento:"Abertura e curativo 45", valor:750}],
+     exa:[{tipo:"Periapical", data:"2026-10-18", impl:[], faltam:[45]}]},
+    {id:34, nome:"Débora Steinbach", tel:"(48) 99544-2299", sexo:"F", idade:57, idioma:"PT", moeda:"BRL", cpf:"565.656.767-88", comoConheceu:"Indicação", orcamento:6000, pago:1200, pendente:4800, dentes:{"34": "problema", "44": "problema", "35": "tratar"}, tipo:"Convênio", desde:"jan/2023", ultOff:-7, prox:"21/10 08:00", queixa:"Reabilitação: 2 implantes + prótese parcial",
+     orc:[{descricao:"Implante 34", valor:2600, dente:"34"},{descricao:"Implante 44", valor:2600, dente:"44"},{descricao:"PPR inferior", valor:800, dente:"34-44"}],
+     evo:[{procedimento:"Cirurgia 34", valor:2600},{procedimento:"Cirurgia 44", valor:1200}],
+     exa:[{tipo:"Panorâmica", data:"2026-09-16", impl:[34, 44], faltam:[35]},{tipo:"Tomografia", data:"2026-09-16", impl:[], faltam:[34, 44]}]},
+    {id:35, nome:"Nelson Aguiar", tel:"(48) 98766-1100", sexo:"M", idade:64, idioma:"PT", moeda:"BRL", cpf:"676.767.878-99", comoConheceu:"Indicação", orcamento:18000, pago:6000, pendente:12000, dentes:{"16": "problema", "17": "problema", "26": "problema", "27": "problema", "36": "problema", "46": "problema"}, tipo:"Particular", desde:"mar/2021", ultOff:-3, prox:"23/10 09:00", queixa:"Reabilitação total — 8 implantes",
+     orc:[{descricao:"8 implantes (protocolo duplo)", valor:12000, dente:"16-46"},{descricao:"2 protocolos", valor:6000, dente:"16-46"}],
+     evo:[{procedimento:"Cirurgia 4 implantes sup.", valor:6000},{procedimento:"Cirurgia 4 implantes inf.", valor:6000}],
+     exa:[{tipo:"Panorâmica", data:"2026-10-01", impl:[16, 17, 26, 27, 36, 46], faltam:[]},{tipo:"Tomografia", data:"2026-09-24", impl:[], faltam:[16, 26, 36, 46]},{tipo:"Periapical", data:"2026-09-24", impl:[], faltam:[16]}]},
+    {id:36, nome:"Elisa Barreto", tel:"(48) 99811-5544", sexo:"F", idade:34, idioma:"PT", moeda:"BRL", cpf:"787.878.989-00", comoConheceu:"Google", orcamento:1200, pago:1200, pendente:0, dentes:{"37": "tratar"}, tipo:"Particular", desde:"nov/2025", ultOff:-9, prox:"29/10 11:30", queixa:"Dor no 37, possível cárie profunda",
+     orc:[{descricao:"Restauração 37 + proteção pulpar", valor:1200, dente:"37"}],
+     evo:[{procedimento:"Restauração 37", valor:1200}],
+     exa:[{tipo:"Periapical", data:"2026-09-22", impl:[], faltam:[37]}]},
+    ];
+    EXTRAS.forEach(e => {
+      fichas.push(e);
+      orcamentos[e.id] = (e.orc || []).map(o => ({descricao:o.descricao, valor:o.valor, moeda:e.moeda, dente:o.dente}));
+      evolucoes[e.id] = (e.evo || []).map(v => ({data: isoDia(-(30 + e.id % 40)), procedimento:v.procedimento,
+                        profissional: (e.id % 2 ? 'Dr. Carlos' : 'Dra. Mariana'), valor:v.valor, moeda:e.moeda,
+                        observacoes: 'Registro de demonstração.'}));
+      examesDB[e.id] = (e.exa || []).map((x,i) => ({id: e.id*100+i, tipo:x.tipo, data:x.data,
+                        arquivo:'exames/' + e.id + '-' + i + '.png', impl:x.impl, faltam:x.faltam}));
+    });
+    window.__FICHAS = fichas;
+
     const caixa = () => {
       const hoje = isoDia(0);
       const moedas = {};
@@ -2234,7 +2368,7 @@
       }
       if(sub === 'financeiro' && metodo === 'GET') return responder({orcamentos: _DEMO.orcamentos[id] || []});
       if(sub === 'evolucoes' && metodo === 'GET') return responder(_DEMO.evolucoes[id] || []);
-      if(sub === 'exames' && metodo === 'GET') return responder([]);
+      if(sub === 'exames' && metodo === 'GET') return responder(examesDB[id] || []);
       if(sub === 'dentes' && metodo === 'POST'){
         ficha.dentes = Object.assign({}, ficha.dentes, {[corpo.dente]: corpo.estado});
         return responder({ok: true, dentes: ficha.dentes});
@@ -2421,7 +2555,7 @@
     var secPac = novaSecao("pac","Pacientes","clique no nome para abrir o prontuário");
     secPac.querySelector("#mkCorpo-pac").appendChild(
       el("div","card",'<div class="tw"><table class="mk"><thead><tr>'+
-        '<th>Paciente</th><th>Último atendimento</th><th>Próxima consulta</th><th>Telefone</th><th>Documento</th><th>Tipo</th><th class="num">Saldo</th>'+
+        '<th>Paciente</th><th>Último atendimento</th><th>Próxima consulta</th><th>Telefone</th><th>Documento</th><th>Tipo</th><th class="num">Saldo</th><th class="num">Exames</th>'+
         '</tr></thead><tbody id="mkPacBody"></tbody></table></div>')
     );
 
@@ -2431,8 +2565,12 @@
         var tem = saldoTotal(p) > 0.01;
         return '<tr><td><a href="#" data-pac="'+p.n+'" style="color:#7fb3ff;text-decoration:none">'+p.n+'</a></td>'+
           '<td>'+p.ult+'</td><td>'+p.prox+'</td><td>'+p.tel+'</td><td>'+p.doc+'</td><td>'+p.tipo+'</td>'+
-          '<td class="num"><span class="mk-pill '+(tem?"dev":"ok")+'">'+(tem?saldoTexto(p):"em dia")+'</span></td></tr>';
+          '<td class="num"><span class="mk-pill '+(tem?"dev":"ok")+'">'+(tem?saldoTexto(p):"em dia")+'</span></td>'+
+          '<td class="num">'+(p.exa?"<button class=\"mk-mini\" data-exa=\""+p.n+"\">🩻 "+p.exa+"</button>":'<span class="mk-sub">—</span>')+'</td></tr>';
       }).join("");
+      tb.querySelectorAll("button[data-exa]").forEach(function(b){
+        b.addEventListener("click", function(ev){ ev.stopPropagation(); try{ abrirExames(b.getAttribute("data-exa")); }catch(e){} });
+      });
       tb.querySelectorAll("a[data-pac]").forEach(function(a){
         a.addEventListener("click", function(ev){
           ev.preventDefault();
@@ -2938,7 +3076,247 @@
     if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);
     else iniciar();
 
+    /* ===========================================================================
+     EXTRAS — 30 pacientes de teste + radiografias (19/10/2026)
+     Roda depois do modulos2, no mesmo escopo: pode usar PAC, renderPac,
+     novaSecao, el, mostrarTela, MENU.
+     =========================================================================== */
+
+  var FICHAS_DEMO = window.__FICHAS || [];
+
+  function docTexto(f){
+    if(f.cpf) return "CPF " + f.cpf;
+    if(f.ruc) return "RUC " + f.ruc;
+    if(f.ci)  return "C.I. " + f.ci;
+    return "—";
+  }
+  function dataCurta(off){
+    var d = new Date(); d.setDate(d.getDate() + (off||0));
+    var p = function(n){ return (n<10?"0":"")+n; };
+    return p(d.getDate()) + "/" + p(d.getMonth()+1);
+  }
+
+  /* --- junta as fichas do servidor de mentira na tabela de pacientes --- */
+  FICHAS_DEMO.forEach(function(f){
+    var existe = PAC.some(function(p){ return p.n === f.nome; });
+    if(existe) return;
+    var saldo = {BRL:0, USD:0, GS:0};
+    if(Number(f.pendente) > 0) saldo[f.moeda || "BRL"] = Number(f.pendente);
+    PAC.push({
+      n: f.nome, tel: f.tel, doc: docTexto(f),
+      ult: dataCurta(f.ultOff), prox: f.prox || "—",
+      saldo: saldo, desde: f.desde || "—", tipo: f.tipo || "Particular",
+      idPac: f.id, idade: f.idade, sexo: f.sexo, idioma: f.idioma,
+      queixa: f.queixa || "", exa: (f.exa || []).length
+    });
+  });
+
+  /* ---------- RAIO-X DE MENTIRA (SVG) ---------- */
+  function semente(txt){
+    var h = 0; for(var i=0;i<txt.length;i++){ h = (h*31 + txt.charCodeAt(i)) % 100000; }
+    return function(){ h = (h*9301 + 49297) % 233280; return h/233280; };
+  }
+
+  function raioX(tipo, nome, data, impl, faltam){
+    var rnd = semente(nome + tipo + data);
+    var W = 640, H = 300;
+    if(tipo !== "Panorâmica"){ W = 460; H = 320; }
+    var impl = impl || [], faltam = faltam || [];
+    var s = [];
+    s.push('<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">');
+    s.push('<defs>');
+    s.push('<radialGradient id="g" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#3b434d"/><stop offset="0.55" stop-color="#1c2126"/><stop offset="1" stop-color="#07090b"/></radialGradient>');
+    s.push('<filter id="grao"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.16"/></feComponentTransfer><feBlend in="SourceGraphic" mode="overlay"/></filter>');
+    s.push('</defs>');
+    s.push('<rect width="'+W+'" height="'+H+'" fill="url(#g)"/>');
+    s.push('<g filter="url(#grao)" opacity="0.9">');
+
+    if(tipo === "Panorâmica"){
+      // maxilar: arco
+      s.push('<path d="M40,120 Q'+ (W/2) +',30 '+ (W-40) +',120" fill="none" stroke="#5a6673" stroke-width="26" opacity="0.45"/>');
+      s.push('<path d="M40,150 Q'+ (W/2) +',60 '+ (W-40) +',150" fill="none" stroke="#6b7885" stroke-width="14" opacity="0.30"/>');
+      s.push('<path d="M40,190 Q'+ (W/2) +',258 '+ (W-40) +',190" fill="none" stroke="#5a6673" stroke-width="24" opacity="0.40"/>');
+      // dentes superiores e inferiores
+      for(var i=0;i<16;i++){
+        var t = i/15;
+        var x = 60 + t*(W-120);
+        var yTopo = 118 - Math.sin(Math.PI*t)*78;
+        var yBaixo = 196 + Math.sin(Math.PI*t)*58;
+        var num = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28][i];
+        var numB = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38][i];
+        desenhaDente(s, x, yTopo, num, impl.indexOf(num)>=0, faltam.indexOf(num)>=0, false);
+        desenhaDente(s, x, yBaixo, numB, impl.indexOf(numB)>=0, faltam.indexOf(numB)>=0, true);
+      }
+    } else if(tipo === "Periapical"){
+      s.push('<rect x="20" y="20" width="'+ (W-40) +'" height="'+ (H-40) +'" fill="none" stroke="#2a3138" stroke-width="2"/>');
+      for(var k=0;k<3;k++){
+        var cx = 110 + k*120;
+        desenhaDente(s, cx, 80, 40+k, impl.indexOf(40+k)>=0, false, false, 1.9);
+        s.push('<line x1="'+cx+'" y1="118" x2="'+cx+'" y2="250" stroke="#c8d2dc" stroke-width="2" opacity="0.55"/>');
+      }
+    } else {
+      // tomografia: corte
+      s.push('<circle cx="'+ (W/2) +'" cy="'+ (H/2) +'" r="118" fill="none" stroke="#4a5561" stroke-width="16" opacity="0.55"/>');
+      s.push('<circle cx="'+ (W/2) +'" cy="'+ (H/2) +'" r="86" fill="#1a1f24" stroke="#6c7987" stroke-width="6" opacity="0.8"/>');
+      s.push('<circle cx="'+ (W/2) +'" cy="'+ (H/2) +'" r="34" fill="#0d1114" stroke="#8b98a6" stroke-width="3"/>');
+      desenhaImplante(s, W/2 - 9, H/2 - 46, 1.5, false);
+      s.push('<text x="'+(W/2+40)+'" y="'+(H/2-30)+'" fill="#8fa3b8" font-size="13" font-family="monospace">4.1 mm</text>');
+      s.push('<text x="'+(W/2+40)+'" y="'+(H/2+50)+'" fill="#8fa3b8" font-size="13" font-family="monospace">10 mm</text>');
+    }
+    s.push('</g>');
+    // etiqueta
+    s.push('<text x="16" y="26" fill="#9fb2c4" font-size="14" font-family="monospace" opacity="0.9">'+escapa(nome.toUpperCase())+'</text>');
+    s.push('<text x="16" y="'+(H-14)+'" fill="#7d8fa1" font-size="12" font-family="monospace">'+escapa(tipo.toUpperCase())+' · '+escapa(data)+'</text>');
+    s.push('<text x="'+(W-46)+'" y="26" fill="#7d8fa1" font-size="12" font-family="monospace">R</text>');
+    s.push('<text x="24" y="26" fill="#7d8fa1" font-size="12" font-family="monospace" opacity="0.0">L</text>');
+    s.push('</svg>');
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s.join(""));
+  }
+
+  function escapa(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+  function desenhaDente(s, x, y, num, temImplante, falta, inferior, escala){
+    var sc = escala || 1;
+    var w = 22*sc, h = 40*sc;
+    if(falta) return;
+    if(temImplante){
+      desenhaImplante(s, x - 8*sc, y - 6*sc, sc, inferior);
+      s.push('<rect x="'+(x-w/2)+'" y="'+(y + (inferior? 34*sc : -46*sc))+'" width="'+w+'" height="'+(16*sc)+'" rx="3" fill="#dfe7ee" opacity="0.85"/>');
+      return;
+    }
+    s.push('<rect x="'+(x-w/2)+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+(5*sc)+'" fill="#c9d3dd" opacity="0.92"/>');
+    s.push('<rect x="'+(x-w/2+3)+'" y="'+(y+4)+'" width="'+(w-6)+'" height="'+(h-8)+'" rx="'+(3*sc)+'" fill="#eef3f8" opacity="0.45"/>');
+    s.push('<path d="M'+x+','+(y+h)+' l'+(-w*0.25)+','+(30*sc)+'" stroke="#aeb9c4" stroke-width="'+(2*sc)+'" fill="none" opacity="0.8"/>');
+  }
+
+  function desenhaImplante(s, x, y, sc, invertido){
+    var sc = sc || 1, w = 16*sc, h = 46*sc;
+    s.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3" fill="#e8eef5" opacity="0.95"/>');
+    for(var i=1;i<6;i++){
+      s.push('<line x1="'+x+'" y1="'+(y + i*h/6)+'" x2="'+(x+w)+'" y2="'+(y + i*h/6 - 3*sc)+'" stroke="#5c6873" stroke-width="'+(1.6*sc)+'"/>');
+    }
+    s.push('<rect x="'+(x-2*sc)+'" y="'+(invertido? y-9*sc : y+h)+'" width="'+(w+4*sc)+'" height="'+(9*sc)+'" rx="2" fill="#cfd9e2"/>');
+  }
+
+  /* ---------- TELA: RADIOGRAFIAS ---------- */
+  var secRad = novaSecao("rad", "Radiografias", "panorâmicas, periapicais e tomografias dos pacientes de teste");
+  secRad.querySelector("#mkCorpo-rad").innerHTML =
+    '<div class="mk-head" style="margin-bottom:8px">' +
+      '<span class="mk-sub" id="mkRadResumo"></span>' +
+      '<span style="flex:1"></span>' +
+      '<input id="mkRadBusca" placeholder="buscar paciente..." style="background:#0f1319;border:1px solid #2a323d;color:#dfe7ef;border-radius:8px;padding:8px 10px;width:240px">' +
+    '</div><div id="mkRadGrid" class="mk-radgrid"></div>';
+
+  function listaExames(){
+    var out = [];
+    FICHAS_DEMO.forEach(function(f){
+      (f.exa || []).forEach(function(x, i){
+        out.push({pac:f.nome, id:f.id, tipo:x.tipo, data:x.data, impl:x.impl || [], faltam:x.faltam || [], idx:i});
+      });
+    });
+    return out;
+  }
+
+  function desenhaRad(filtro){
+    var box = document.getElementById("mkRadGrid"); if(!box) return;
+    var q = (filtro || "").toLowerCase();
+    var porPac = {};
+    listaExames().forEach(function(e){
+      if(q && e.pac.toLowerCase().indexOf(q) < 0) return;
+      (porPac[e.pac] = porPac[e.pac] || []).push(e);
+    });
+    var nomes = Object.keys(porPac).sort();
+    var total = listaExames().length;
+    var resumo = document.getElementById("mkRadResumo");
+    if(resumo) resumo.textContent = nomes.length + " pacientes com exame · " + total + " imagens";
+    if(!nomes.length){ box.innerHTML = '<div class="mk-note">Nenhum exame com esse filtro.</div>'; return; }
+    box.innerHTML = nomes.map(function(n){
+      var lista = porPac[n];
+      var primeiro = lista[0];
+      var img = raioX(primeiro.tipo, n, primeiro.data, primeiro.impl, primeiro.faltam);
+      var tipos = {};
+      lista.forEach(function(l){ tipos[l.tipo] = (tipos[l.tipo]||0)+1; });
+      var resumo2 = Object.keys(tipos).map(function(t){ return t + " ("+tipos[t]+")"; }).join(" · ");
+      return '<div class="mk-radcard" data-pac="'+escapa(n)+'">' +
+        '<div class="mk-radthumb"><img src="'+img+'" alt=""></div>' +
+        '<div class="mk-radinfo"><b>'+escapa(n)+'</b><span>'+escapa(resumo2)+'</span>' +
+        '<span class="mk-sub">'+lista.length+' exame(s) · último '+lista[lista.length-1].data.split("-").reverse().join("/")+'</span></div>' +
+      '</div>';
+    }).join("");
+    box.querySelectorAll(".mk-radcard").forEach(function(c){
+      c.addEventListener("click", function(){ abrirExames(c.getAttribute("data-pac")); });
+    });
+  }
+
+  function abrirExames(nome){
+    var ficha = FICHAS_DEMO.filter(function(f){ return f.nome === nome; })[0];
+    var lista = ficha ? (ficha.exa || []) : [];
+    var m = document.getElementById("mkModalRad");
+    if(!m){
+      m = el("div","mk-modal"); m.id = "mkModalRad";
+      m.innerHTML = '<div class="mk-panel mk-panel-rad"><h3 id="mkRadTitulo"></h3><div id="mkRadCorpo"></div></div>';
+      document.body.appendChild(m);
+      m.addEventListener("click", function(ev){ if(ev.target === m) m.classList.remove("on"); });
+    }
+    document.getElementById("mkRadTitulo").textContent = "Exames de " + nome;
+    var corpo = document.getElementById("mkRadCorpo");
+    if(!lista.length){
+      corpo.innerHTML = '<div class="mk-note">Esse paciente ainda não tem exame anexado.</div>';
+    } else {
+      corpo.innerHTML = '<div class="mk-radgal">' + lista.map(function(x){
+        var img = raioX(x.tipo, nome, x.data, x.impl, x.faltam);
+        var det = [];
+        if(x.impl && x.impl.length) det.push("implantes: " + x.impl.join(", "));
+        if(x.faltam && x.faltam.length) det.push("ausentes: " + x.faltam.join(", "));
+        return '<figure class="mk-radfig"><img src="'+img+'" alt=""><figcaption><b>'+escapa(x.tipo)+'</b>' +
+          '<span>'+escapa(x.data.split("-").reverse().join("/"))+'</span>' +
+          (det.length ? '<span class="mk-sub">'+escapa(det.join(" · "))+'</span>' : '') +
+        '</figcaption></figure>';
+      }).join("") + '</div>';
+    }
+    m.classList.add("on");
+  }
+
+  /* ---------- ESTILO ---------- */
+  var st = document.createElement("style");
+  st.textContent = [
+    ".mk-radgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}",
+    ".mk-radcard{background:#12161d;border:1px solid #232a36;border-radius:12px;padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:8px}",
+    ".mk-radcard:hover{border-color:#3c4a5c;background:#161c25}",
+    ".mk-radthumb{background:#05070a;border-radius:8px;overflow:hidden;line-height:0}",
+    ".mk-radthumb img{width:100%;height:auto;display:block;opacity:.95}",
+    ".mk-radinfo{display:flex;flex-direction:column;gap:2px;font-size:12px}",
+    ".mk-radinfo b{font-size:13px;color:#e6edf5}",
+    ".mk-radinfo span{color:#93a1b1}",
+    ".mk-panel-rad{width:min(1100px,94vw);max-height:88vh;overflow:auto}",
+    ".mk-radgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}",
+    ".mk-radfig{margin:0;background:#0b0f14;border:1px solid #232a36;border-radius:10px;overflow:hidden}",
+    ".mk-radfig img{width:100%;display:block;background:#05070a}",
+    ".mk-radfig figcaption{display:flex;flex-direction:column;gap:2px;padding:8px 10px;font-size:12px;color:#93a1b1}",
+    ".mk-radfig figcaption b{color:#e6edf5;font-size:12px}",
+    "#screen-mk-rad .mk-head h2{font-size:15px}"
+  ].join("\n");
+  document.head.appendChild(st);
+
+  /* ---------- BOTÃO NO MENU CLÍNICA ---------- */
+  (function(){
+    var nav = document.querySelector(".nav");
+    var grupo = nav ? nav.querySelectorAll(".nav-grupo") : [];
+    var alvo = grupo[grupo.length-1];
+    if(!alvo) return;
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "nav-item"; b.setAttribute("data-extra","rad");
+    b.innerHTML = '<span class="dot"></span>Radiografias';
+    b.addEventListener("click", function(){ mostrarTela("rad"); });
+    alvo.appendChild(b);
   })();
+
+  desenhaRad("");
+  var campoRad = document.getElementById("mkRadBusca");
+  if(campoRad) campoRad.addEventListener("input", function(){ desenhaRad(campoRad.value); });
+  try { renderPac(); } catch(e){}
+
+})();
   async function api(caminho, opcoes){
     opcoes = opcoes || {};
     const cabecalhos = Object.assign({}, opcoes.cabecalhos || {});
